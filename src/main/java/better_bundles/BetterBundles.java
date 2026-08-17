@@ -1,5 +1,6 @@
 package better_bundles;
 
+import better_bundles.component.BetterBundleComponents;
 import net.fabricmc.api.ModInitializer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -11,6 +12,7 @@ public class BetterBundles implements ModInitializer {
 
 	@Override
 	public void onInitialize() {
+		BetterBundleComponents.initialize();
 		LOGGER.info("Better Bundles initialized");
 	}
 }

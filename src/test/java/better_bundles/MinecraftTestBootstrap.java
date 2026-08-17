@@ -1,5 +1,6 @@
 package better_bundles;
 
+import better_bundles.component.BetterBundleComponents;
 import net.minecraft.SharedConstants;
 import net.minecraft.server.Bootstrap;
 
@@ -19,6 +20,7 @@ public final class MinecraftTestBootstrap {
 		}
 		SharedConstants.tryDetectVersion();
 		Bootstrap.bootStrap();
+		BetterBundleComponents.initialize();
 		initialized = true;
 	}
 }
