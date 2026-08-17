@@ -4,12 +4,12 @@ import better_bundles.client.GridAnchorResolver.ResolvedPlacement;
 import better_bundles.inventory.BundleInventoryAccess;
 import better_bundles.mixin.client.AbstractContainerScreenAccessor;
 import better_bundles.network.BundleSlotActionPayload;
-import com.mojang.logging.LogUtils;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
-import org.slf4j.Logger;
 
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -20,7 +20,6 @@ import java.util.Set;
  */
 public final class BundleHoverController {
 
-	private static final Logger LOGGER = LogUtils.getLogger();
 	private static final BundleHoverController INSTANCE = new BundleHoverController();
 	private static final int MENU_SLOT_HIT_SIZE = 18;
 
@@ -111,15 +110,41 @@ public final class BundleHoverController {
 		active = null;
 	}
 
-	public boolean handleOverlayMouseClick(AbstractContainerScreen<?> screen, MouseButtonEvent event) {
-		return handleOverlayMouse(screen, event, true);
+	public boolean handleOverlayMouseClick(AbstractContainerScreen<?> screen, MouseButtonEvent event, boolean doubled) {
+		Optional<ActiveOverlay> current = getActive();
+		if (current.isEmpty()) {
+			return false;
+		}
+
+		ActiveOverlay overlay = current.get();
+		double mouseX = event.x();
+		double mouseY = event.y();
+
+		if (hasShiftDown() && !overlay.containsOverlayRect(mouseX, mouseY)) {
+			return handleShiftClickIntoBundle(screen, overlay, mouseX, mouseY);
+		}
+
+		OptionalInt innerSlot = overlay.hitInnerSlot(mouseX, mouseY);
+		if (innerSlot.isPresent()) {
+			if (hasShiftDown()) {
+				BundleOverlayNetworking.sendAction(
+						screen,
+						overlay,
+						innerSlot.getAsInt(),
+						BundleSlotActionPayload.Action.SHIFT_MOVE
+				);
+			} else if (doubled) {
+				sendResolvedAction(screen, overlay, innerSlot.getAsInt(), true);
+			} else {
+				sendResolvedAction(screen, overlay, innerSlot.getAsInt(), false);
+			}
+			return true;
+		}
+
+		return shouldBlockUnderlyingSlot(screen, overlay, mouseX, mouseY);
 	}
 
-	public boolean shouldBlockOverlayMouse(AbstractContainerScreen<?> screen, MouseButtonEvent event) {
-		return handleOverlayMouse(screen, event, false);
-	}
-
-	private boolean handleOverlayMouse(AbstractContainerScreen<?> screen, MouseButtonEvent event, boolean stubOnInnerHit) {
+	public boolean handleOverlayMouseRelease(AbstractContainerScreen<?> screen, MouseButtonEvent event) {
 		Optional<ActiveOverlay> current = getActive();
 		if (current.isEmpty()) {
 			return false;
@@ -130,14 +155,22 @@ public final class BundleHoverController {
 		double mouseY = event.y();
 
 		OptionalInt innerSlot = overlay.hitInnerSlot(mouseX, mouseY);
-		if (innerSlot.isPresent()) {
-			if (stubOnInnerHit) {
-				sendInnerSlotActionStub(screen, overlay, innerSlot.getAsInt(), event);
-			}
+		if (innerSlot.isPresent() && !screen.getMenu().getCarried().isEmpty()) {
+			sendResolvedAction(screen, overlay, innerSlot.getAsInt(), false);
 			return true;
 		}
 
 		return shouldBlockUnderlyingSlot(screen, overlay, mouseX, mouseY);
+	}
+
+	public boolean shouldBlockOverlayMouse(AbstractContainerScreen<?> screen, MouseButtonEvent event) {
+		Optional<ActiveOverlay> current = getActive();
+		if (current.isEmpty()) {
+			return false;
+		}
+
+		return shouldBlockUnderlyingSlot(screen, current.get(), event.x(), event.y())
+				|| current.get().containsOverlayRect(event.x(), event.y());
 	}
 
 	private void tryOpenPanel(AbstractContainerScreen<?> screen, double mouseX, double mouseY) {
@@ -234,6 +267,42 @@ public final class BundleHoverController {
 		return Optional.empty();
 	}
 
+	private static boolean handleShiftClickIntoBundle(
+			AbstractContainerScreen<?> screen,
+			ActiveOverlay overlay,
+			double mouseX,
+			double mouseY
+	) {
+		Optional<Slot> hovered = findHoveredSlot(screen, mouseX, mouseY);
+		if (hovered.isEmpty()) {
+			return false;
+		}
+
+		Slot slot = hovered.get();
+		if (slot == overlay.bundleSlot() || slot.getItem().isEmpty()) {
+			return false;
+		}
+
+		if (overlay.containsOverlayRect(mouseX, mouseY)) {
+			return false;
+		}
+
+		var inventory = BundleInventoryAccess.read(overlay.bundleStack());
+		int targetInner = inventory.firstEmpty().orElse(-1);
+		if (targetInner < 0) {
+			return false;
+		}
+
+		BundleOverlayNetworking.sendAction(
+				screen,
+				overlay,
+				targetInner,
+				BundleSlotActionPayload.Action.SHIFT_MOVE,
+				slot.index
+		);
+		return true;
+	}
+
 	private static boolean shouldBlockUnderlyingSlot(
 			AbstractContainerScreen<?> screen,
 			ActiveOverlay overlay,
@@ -258,35 +327,49 @@ public final class BundleHoverController {
 		return obscured.contains(slot.index);
 	}
 
-	private static void sendInnerSlotActionStub(
+	private static void sendResolvedAction(
 			AbstractContainerScreen<?> screen,
 			ActiveOverlay overlay,
 			int innerSlot,
-			MouseButtonEvent event
+			boolean doubled
 	) {
-		BundleSlotActionPayload.Action action = stubAction(screen);
-		BundleSlotActionPayload payload = new BundleSlotActionPayload(
-				screen.getMenu().containerId,
-				overlay.bundleSlot().index,
-				innerSlot,
-				action,
-				0
-		);
+		AbstractContainerMenu menu = screen.getMenu();
+		ItemStack carried = menu.getCarried();
+		ItemStack inner = BundleInventoryAccess.read(overlay.bundleStack()).get(innerSlot);
 
-		// TODO Phase 5: ClientPlayNetworking.send(BundleSlotActionPayload.TYPE, payload)
-		LOGGER.debug(
-				"Stub C2S bundle slot action: syncId={}, containerSlot={}, innerSlot={}, action={}, button={}",
-				payload.screenSyncId(),
-				payload.containerSlotId(),
-				payload.innerSlot(),
-				payload.action(),
-				event.button()
-		);
+		BundleSlotActionPayload.Action action;
+		if (doubled
+				&& !carried.isEmpty()
+				&& !inner.isEmpty()
+				&& ItemStack.isSameItemSameComponents(carried, inner)) {
+			action = BundleSlotActionPayload.Action.MERGE;
+		} else {
+			action = resolveAction(carried, inner);
+		}
+
+		if (action != null) {
+			BundleOverlayNetworking.sendAction(screen, overlay, innerSlot, action);
+		}
 	}
 
-	private static BundleSlotActionPayload.Action stubAction(AbstractContainerScreen<?> screen) {
-		return screen.getMenu().getCarried().isEmpty()
-				? BundleSlotActionPayload.Action.PICKUP
-				: BundleSlotActionPayload.Action.PLACE;
+	private static BundleSlotActionPayload.Action resolveAction(ItemStack carried, ItemStack inner) {
+		if (carried.isEmpty() && !inner.isEmpty()) {
+			return BundleSlotActionPayload.Action.PICKUP;
+		}
+
+		if (!carried.isEmpty() && inner.isEmpty()) {
+			return BundleSlotActionPayload.Action.PLACE;
+		}
+
+		if (!carried.isEmpty() && !inner.isEmpty()) {
+			return BundleSlotActionPayload.Action.SWAP;
+		}
+
+		return null;
+	}
+
+	private static boolean hasShiftDown() {
+		Minecraft minecraft = Minecraft.getInstance();
+		return minecraft != null && minecraft.hasShiftDown();
 	}
 }

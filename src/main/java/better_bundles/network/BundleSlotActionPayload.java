@@ -15,8 +15,11 @@ public record BundleSlotActionPayload(
 	int containerSlotId,
 	int innerSlot,
 	Action action,
-	int carriedRevision
+	int carriedRevision,
+	int sourceSlotId
 ) implements CustomPacketPayload {
+
+	public static final int NO_SOURCE_SLOT = -1;
 
 	public static final Identifier ID = Identifier.fromNamespaceAndPath(BetterBundles.MOD_ID, "bundle_slot_action");
 	public static final CustomPacketPayload.Type<BundleSlotActionPayload> TYPE = new CustomPacketPayload.Type<>(ID);
@@ -32,6 +35,8 @@ public record BundleSlotActionPayload(
 		payload -> payload.action().ordinal(),
 		ByteBufCodecs.VAR_INT,
 		BundleSlotActionPayload::carriedRevision,
+		ByteBufCodecs.VAR_INT,
+		BundleSlotActionPayload::sourceSlotId,
 		BundleSlotActionPayload::fromWire
 	);
 
@@ -40,14 +45,16 @@ public record BundleSlotActionPayload(
 		int containerSlotId,
 		int innerSlot,
 		int actionOrdinal,
-		int carriedRevision
+		int carriedRevision,
+		int sourceSlotId
 	) {
 		return new BundleSlotActionPayload(
 			screenSyncId,
 			containerSlotId,
 			innerSlot,
 			decodeAction(actionOrdinal),
-			carriedRevision
+			carriedRevision,
+			sourceSlotId
 		);
 	}
 
@@ -60,8 +67,10 @@ public record BundleSlotActionPayload(
 		PLACE,
 		PICKUP,
 		SWAP,
-		/** Reserved stub for future shift-click handling; rejected in Phase 2b. */
-		SHIFT_MOVE
+		/** Shift-click out of inner slot, or shift-click into bundle from {@link #sourceSlotId}. */
+		SHIFT_MOVE,
+		/** Double-click merge between carried stack and inner slot. */
+		MERGE
 	}
 
 	private static Action decodeAction(int id) {

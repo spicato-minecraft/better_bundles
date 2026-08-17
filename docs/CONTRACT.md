@@ -42,7 +42,8 @@ Wire shape (fields in order):
   "containerSlotId": "<varint>",
   "innerSlot": "<varint 0..3>",
   "action": "<varint enum ordinal>",
-  "carriedRevision": "<varint>"
+  "carriedRevision": "<varint>",
+  "sourceSlotId": "<varint, -1 when unused>"
 }
 ```
 
@@ -51,8 +52,9 @@ Wire shape (fields in order):
 | `screenSyncId` | Must equal the open menu's `AbstractContainerMenu#getStateId()` when the action is applied. |
 | `containerSlotId` | Slot index of the bundle stack in the open container (player inventory or external menu). |
 | `innerSlot` | Index into the 2×2 inner grid (0 = top-left, 3 = bottom-right). |
-| `action` | `0` PLACE, `1` PICKUP, `2` SWAP, `3` SHIFT_MOVE (stub — rejected until shift-click is implemented). |
+| `action` | `0` PLACE, `1` PICKUP, `2` SWAP, `3` SHIFT_MOVE, `4` MERGE |
 | `carriedRevision` | Must equal the menu's current `getStateId()` so stale cursor clicks are rejected. |
+| `sourceSlotId` | `-1` when unused. For SHIFT_MOVE into bundle, the player slot index to pull from. |
 
 ### Validation (server)
 
@@ -62,7 +64,8 @@ Wire shape (fields in order):
 4. `containerSlotId` is a valid slot index in the open menu.
 5. Item in `containerSlotId` passes `BundleInventoryAccess.isBundleItem`.
 6. `innerSlot` in `0..3`.
-7. `SHIFT_MOVE` is rejected (stub).
+7. `sourceSlotId` is `-1` unless `SHIFT_MOVE` moves from a player slot into the bundle.
+8. `SHIFT_MOVE` and `MERGE` are implemented in Phase 5.
 
 ### Action semantics
 
@@ -73,6 +76,7 @@ All mutations use `BundleInventoryAccess.read` / `write` and enforce `BundleSlot
 | PLACE | Carried non-empty; inner slot empty; `canInsert(carried)` | Copies carried into inner slot; clears carried. |
 | PICKUP | Carried empty; inner slot non-empty | Moves inner stack to carried; clears inner slot. |
 | SWAP | Both carried and inner non-empty; `canInsert(carried)` | Exchanges carried and inner stacks. |
-| SHIFT_MOVE | — | Rejected (reserved). |
+| SHIFT_MOVE | `sourceSlotId == -1`: inner slot non-empty. `sourceSlotId >= 0`: player slot non-empty, bundle has empty inner slot, `canInsert(source)` | Out: quick-moves inner stack into player inventory. In: moves player slot stack into first empty inner slot. |
+| MERGE | Carried and inner same item; inner below max stack | Merges carried count into inner up to max stack size. |
 
 On success: bundle stack is written back to `containerSlotId`, carried is updated, the container slot is marked changed, and `broadcastChanges()` runs.

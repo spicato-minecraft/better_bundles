@@ -47,7 +47,7 @@ public abstract class AbstractContainerScreenInputMixin {
 			CallbackInfoReturnable<Boolean> cir
 	) {
 		AbstractContainerScreen<?> screen = (AbstractContainerScreen<?>) (Object) this;
-		if (BundleHoverController.getInstance().handleOverlayMouseClick(screen, event)) {
+		if (BundleHoverController.getInstance().handleOverlayMouseClick(screen, event, doubled)) {
 			cir.setReturnValue(true);
 		}
 	}
@@ -58,7 +58,9 @@ public abstract class AbstractContainerScreenInputMixin {
 			CallbackInfoReturnable<Boolean> cir
 	) {
 		AbstractContainerScreen<?> screen = (AbstractContainerScreen<?>) (Object) this;
-		if (BundleHoverController.getInstance().shouldBlockOverlayMouse(screen, event)) {
+		if (BundleHoverController.getInstance().handleOverlayMouseRelease(screen, event)) {
+			cir.setReturnValue(true);
+		} else if (BundleHoverController.getInstance().shouldBlockOverlayMouse(screen, event)) {
 			cir.setReturnValue(true);
 		}
 	}
