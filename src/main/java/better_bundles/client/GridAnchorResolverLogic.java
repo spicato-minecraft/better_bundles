@@ -126,16 +126,23 @@ public final class GridAnchorResolverLogic {
 		}
 
 		if (menuSlotIndex < containerSlotCount) {
-			int rows = containerSlotCount / STANDARD_GRID_WIDTH;
-			if (rows <= 0 || containerSlotCount % STANDARD_GRID_WIDTH != 0) {
-				return SlotClassification.UNSUPPORTED;
+			if (containerSlotCount % STANDARD_GRID_WIDTH == 0) {
+				int rows = containerSlotCount / STANDARD_GRID_WIDTH;
+				return new SlotClassification(
+						true,
+						HostGridKind.CONTAINER,
+						STANDARD_GRID_WIDTH,
+						rows,
+						menuSlotIndex
+				);
 			}
 
+			// Hopper and other non-9-wide container grids; dimensions refined from live slot positions.
 			return new SlotClassification(
 					true,
 					HostGridKind.CONTAINER,
-					STANDARD_GRID_WIDTH,
-					rows,
+					containerSlotCount,
+					1,
 					menuSlotIndex
 			);
 		}

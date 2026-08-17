@@ -1,5 +1,6 @@
 package better_bundles.client;
 
+import better_bundles.client.GridAnchorResolver.ResolvedAnchor;
 import better_bundles.client.GridAnchorResolver.ResolvedPlacement;
 import better_bundles.inventory.BundleInventoryAccess;
 import better_bundles.mixin.client.AbstractContainerScreenAccessor;
@@ -169,8 +170,16 @@ public final class BundleHoverController {
 			return false;
 		}
 
-		return shouldBlockUnderlyingSlot(screen, current.get(), event.x(), event.y())
-				|| current.get().containsOverlayRect(event.x(), event.y());
+		ActiveOverlay overlay = current.get();
+		double mouseX = event.x();
+		double mouseY = event.y();
+
+		if (shouldBlockUnderlyingSlot(screen, overlay, mouseX, mouseY)) {
+			return true;
+		}
+
+		// Block only inner overlay slots, not the full bounding box — clicks outside pass to EMI/vanilla.
+		return overlay.hitInnerSlot(mouseX, mouseY).isPresent();
 	}
 
 	private void tryOpenPanel(AbstractContainerScreen<?> screen, double mouseX, double mouseY) {
@@ -189,7 +198,12 @@ public final class BundleHoverController {
 			return;
 		}
 
-		active = refreshStack(current);
+		ActiveOverlay refreshed = refreshOverlay(screen, current);
+		if (refreshed == null) {
+			close();
+			return;
+		}
+		active = refreshed;
 
 		if (!active.containsPoint(mouseX, mouseY)) {
 			close();
@@ -225,12 +239,23 @@ public final class BundleHoverController {
 		state = State.PANEL_OPEN;
 	}
 
-	private ActiveOverlay refreshStack(ActiveOverlay overlay) {
+	private ActiveOverlay refreshOverlay(AbstractContainerScreen<?> screen, ActiveOverlay overlay) {
+		Optional<ResolvedPlacement> placement = GridAnchorResolver.resolvePlacement(
+				screen,
+				overlay.bundleSlot(),
+				screen.width,
+				screen.height
+		);
+
+		if (placement.isEmpty()) {
+			return null;
+		}
+
 		return new ActiveOverlay(
 				overlay.bundleSlot(),
-				overlay.placement(),
+				placement.get(),
 				overlay.bundleSlot().getItem().copy(),
-				overlay.overlayRects()
+				placement.get().overlayScreenRects()
 		);
 	}
 
@@ -256,10 +281,18 @@ public final class BundleHoverController {
 				continue;
 			}
 
+			int hitW = MENU_SLOT_HIT_SIZE;
+			int hitH = MENU_SLOT_HIT_SIZE;
+			Optional<ResolvedAnchor> anchor = GridAnchorResolver.resolve(screen, slot);
+			if (anchor.isPresent()) {
+				hitW = anchor.get().slotPitchW();
+				hitH = anchor.get().slotPitchH();
+			}
+
 			int slotX = originX + slot.x;
 			int slotY = originY + slot.y;
-			if (mouseX >= slotX && mouseX < slotX + MENU_SLOT_HIT_SIZE
-					&& mouseY >= slotY && mouseY < slotY + MENU_SLOT_HIT_SIZE) {
+			if (mouseX >= slotX && mouseX < slotX + hitW
+					&& mouseY >= slotY && mouseY < slotY + hitH) {
 				return Optional.of(slot);
 			}
 		}

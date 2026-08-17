@@ -4,9 +4,14 @@ import better_bundles.inventory.BundleInteractionLogic;
 import better_bundles.inventory.BundleInventory;
 import better_bundles.inventory.BundleInventoryAccess;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
+import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.ChestBlockEntity;
 
 public class BundleStorageGameTest {
 
@@ -73,6 +78,84 @@ public class BundleStorageGameTest {
 
 		BundleInventory inventory = BundleInventoryAccess.read(bundle);
 		context.assertTrue(inventory.firstOccupied().isEmpty(), "Bundle inner inventory should remain empty");
+
+		context.succeed();
+	}
+
+	@GameTest(maxTicks = 100)
+	public void bundleInChestSlot_preservesInnerInventory(GameTestHelper context) {
+		BlockPos chestPos = new BlockPos(1, 2, 1);
+		context.setBlock(chestPos, Blocks.CHEST);
+
+		ChestBlockEntity chest = context.getBlockEntity(chestPos, ChestBlockEntity.class);
+		ItemStack bundle = new ItemStack(Items.BUNDLE);
+		BundleInventory seeded = BundleInventory.empty()
+				.set(0, new ItemStack(Items.DIRT, 5))
+				.set(2, new ItemStack(Items.COBBLESTONE, 3));
+		BundleInventoryAccess.write(bundle, seeded);
+
+		chest.setItem(0, bundle);
+		BundleInventory fromChest = BundleInventoryAccess.read(chest.getItem(0));
+
+		context.assertValueEqual(Items.DIRT, fromChest.get(0).getItem(), "Chest bundle slot 0 should hold dirt");
+		context.assertValueEqual(5, fromChest.get(0).getCount(), "Chest bundle dirt count should persist");
+		context.assertValueEqual(Items.COBBLESTONE, fromChest.get(2).getItem(), "Chest bundle slot 2 should hold cobblestone");
+		context.assertValueEqual(3, fromChest.get(2).getCount(), "Chest bundle cobblestone count should persist");
+
+		context.succeed();
+	}
+
+	@GameTest(maxTicks = 100)
+	public void bundleContents_persistOnDroppedItem(GameTestHelper context) {
+		ServerLevel level = context.getLevel();
+		BlockPos pos = new BlockPos(1, 2, 1);
+
+		ItemStack bundle = new ItemStack(Items.BUNDLE);
+		BundleInventory seeded = BundleInventory.empty().set(1, new ItemStack(Items.EMERALD, 4));
+		BundleInventoryAccess.write(bundle, seeded);
+
+		ItemEntity entity = new ItemEntity(
+				level,
+				pos.getX() + 0.5,
+				pos.getY(),
+				pos.getZ() + 0.5,
+				bundle
+		);
+		level.addFreshEntity(entity);
+
+		BundleInventory dropped = BundleInventoryAccess.read(entity.getItem());
+		context.assertValueEqual(Items.EMERALD, dropped.get(1).getItem(), "Dropped bundle should keep emerald in slot 1");
+		context.assertValueEqual(4, dropped.get(1).getCount(), "Dropped bundle emerald count should persist");
+
+		context.succeed();
+	}
+
+	@GameTest(maxTicks = 100)
+	public void bundleContents_survivePlayerDeathDrop(GameTestHelper context) {
+		ServerLevel level = context.getLevel();
+		BlockPos pos = new BlockPos(1, 2, 1);
+
+		ItemStack bundle = new ItemStack(Items.BUNDLE);
+		BundleInventory seeded = BundleInventory.empty().set(0, new ItemStack(Items.DIAMOND, 2));
+		BundleInventoryAccess.write(bundle, seeded);
+
+		ItemStack deathDrop = bundle.copy();
+		BundleInventory removed = BundleInventoryAccess.read(deathDrop);
+		context.assertValueEqual(Items.DIAMOND, removed.get(0).getItem(), "Inventory removal should keep inner diamond stack");
+		context.assertValueEqual(2, removed.get(0).getCount(), "Inventory removal should keep inner diamond count");
+
+		ItemEntity entity = new ItemEntity(
+				level,
+				pos.getX() + 0.5,
+				pos.getY(),
+				pos.getZ() + 0.5,
+				deathDrop
+		);
+		level.addFreshEntity(entity);
+
+		BundleInventory onGround = BundleInventoryAccess.read(entity.getItem());
+		context.assertValueEqual(Items.DIAMOND, onGround.get(0).getItem(), "Death drop item entity should keep inner diamond stack");
+		context.assertValueEqual(2, onGround.get(0).getCount(), "Death drop item entity should keep inner diamond count");
 
 		context.succeed();
 	}

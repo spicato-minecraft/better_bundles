@@ -171,6 +171,78 @@ class GridAnchorResolverLogicTest {
 	@Test
 	void standardContainerSlotCountUsesPlayerTail() {
 		assertEquals(27, GridAnchorResolverLogic.standardContainerSlotCount(63));
+		assertEquals(5, GridAnchorResolverLogic.standardContainerSlotCount(41));
 		assertEquals(0, GridAnchorResolverLogic.standardContainerSlotCount(36));
+	}
+
+	@Test
+	void hopperContainerSlotsAreSupported() {
+		int containerSlots = 5;
+
+		SlotClassification middle = GridAnchorResolverLogic.classifyStandardContainerMenuSlot(2, containerSlots);
+		assertTrue(middle.supported());
+		assertEquals(HostGridKind.CONTAINER, middle.hostGrid());
+		assertEquals(5, middle.gridWidth());
+		assertEquals(1, middle.gridHeight());
+		assertEquals(2, middle.slotIndexInGrid());
+	}
+
+	@Test
+	void hopperMiddleSlotOpensUpAndLeft() {
+		SlotClassification hopperSlot = new SlotClassification(true, HostGridKind.CONTAINER, 5, 1, 2);
+		BundleOverlayPlacement.PlacementInput input = GridAnchorResolverLogic.toPlacementInput(
+				hopperSlot,
+				PITCH,
+				PITCH,
+				400,
+				300,
+				80,
+				60
+		);
+		BundleOverlayPlacement.PlacementResult result = BundleOverlayPlacement.compute(input);
+
+		assertEquals(-1, result.dirX());
+		assertEquals(-1, result.dirY());
+		assertEquals(new BundleOverlayPlacement.SlotRect(-36, -36, PITCH, PITCH), result.slot0());
+	}
+
+	@Test
+	void chestContainerUpperLeftOpensUpAndLeft() {
+		int containerSlots = 27;
+		SlotClassification slot = GridAnchorResolverLogic.classifyStandardContainerMenuSlot(0, containerSlots);
+		BundleOverlayPlacement.PlacementInput input = GridAnchorResolverLogic.toPlacementInput(
+				slot,
+				PITCH,
+				PITCH,
+				400,
+				300,
+				80,
+				60
+		);
+		BundleOverlayPlacement.PlacementResult result = BundleOverlayPlacement.compute(input);
+
+		assertEquals(-1, result.dirX());
+		assertEquals(-1, result.dirY());
+		assertEquals(new BundleOverlayPlacement.SlotRect(-36, -36, PITCH, PITCH), result.slot0());
+	}
+
+	@Test
+	void chestContainerLowerRightOpensDownAndRight() {
+		int containerSlots = 27;
+		SlotClassification slot = GridAnchorResolverLogic.classifyStandardContainerMenuSlot(26, containerSlots);
+		BundleOverlayPlacement.PlacementInput input = GridAnchorResolverLogic.toPlacementInput(
+				slot,
+				PITCH,
+				PITCH,
+				400,
+				300,
+				170,
+				120
+		);
+		BundleOverlayPlacement.PlacementResult result = BundleOverlayPlacement.compute(input);
+
+		assertEquals(1, result.dirX());
+		assertEquals(1, result.dirY());
+		assertEquals(new BundleOverlayPlacement.SlotRect(PITCH, PITCH, PITCH, PITCH), result.slot0());
 	}
 }

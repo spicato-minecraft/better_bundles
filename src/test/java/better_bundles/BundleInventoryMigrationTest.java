@@ -1,8 +1,10 @@
 package better_bundles;
 
 import better_bundles.component.BetterBundleComponents;
+import better_bundles.component.BetterBundleContentsComponent;
 import better_bundles.inventory.BundleInventory;
 import better_bundles.inventory.BundleInventoryAccess;
+import com.mojang.serialization.JsonOps;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -79,5 +81,44 @@ class BundleInventoryMigrationTest {
 		assertEquals(Items.BREAD, restored.get(2).getItem());
 		assertTrue(restored.get(3).isEmpty());
 		assertFalse(bundle.has(DataComponents.BUNDLE_CONTENTS));
+	}
+
+	@Test
+	void itemStackCopy_preservesInnerInventory() {
+		ItemStack bundle = new ItemStack(Items.BUNDLE);
+		BundleInventory original = BundleInventory.empty()
+				.set(0, new ItemStack(Items.DIRT, 7))
+				.set(3, new ItemStack(Items.STONE, 1));
+		BundleInventoryAccess.write(bundle, original);
+
+		BundleInventory restored = BundleInventoryAccess.read(bundle.copy());
+
+		assertEquals(Items.DIRT, restored.get(0).getItem());
+		assertEquals(7, restored.get(0).getCount());
+		assertEquals(Items.STONE, restored.get(3).getItem());
+	}
+
+	@Test
+	void componentCodec_roundTripPreservesInventory() {
+		BetterBundleContentsComponent original = BetterBundleContentsComponent.fromInventory(
+				BundleInventory.empty()
+						.set(0, new ItemStack(Items.IRON_INGOT, 2))
+						.set(1, new ItemStack(Items.GOLD_INGOT, 1))
+						.set(2, new ItemStack(Items.COAL, 1))
+						.set(3, new ItemStack(Items.DIRT, 1)),
+				true
+		);
+
+		BetterBundleContentsComponent decoded = BetterBundleContentsComponent.CODEC
+				.decode(JsonOps.INSTANCE, BetterBundleContentsComponent.CODEC.encodeStart(JsonOps.INSTANCE, original).getOrThrow())
+				.getOrThrow()
+				.getFirst();
+
+		assertEquals(original.toInventory().get(0).getItem(), decoded.toInventory().get(0).getItem());
+		assertEquals(original.toInventory().get(0).getCount(), decoded.toInventory().get(0).getCount());
+		assertEquals(original.toInventory().get(1).getItem(), decoded.toInventory().get(1).getItem());
+		assertEquals(original.toInventory().get(2).getItem(), decoded.toInventory().get(2).getItem());
+		assertEquals(original.toInventory().get(3).getItem(), decoded.toInventory().get(3).getItem());
+		assertTrue(decoded.migrated());
 	}
 }

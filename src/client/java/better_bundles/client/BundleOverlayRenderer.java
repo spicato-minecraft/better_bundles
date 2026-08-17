@@ -115,6 +115,17 @@ public final class BundleOverlayRenderer {
 		return computeObscuredSlotIndices(screen, boundingBox(overlayRects));
 	}
 
+	/**
+	 * True when a screen-space point lies inside the overlay bounding box (inner slots only).
+	 */
+	public static boolean containsOverlayBounds(BundleOverlayPlacement.SlotRect[] overlayRects, double mouseX, double mouseY) {
+		BundleOverlayPlacement.SlotRect bounds = boundingBox(overlayRects);
+		return mouseX >= bounds.x()
+				&& mouseX < bounds.right()
+				&& mouseY >= bounds.y()
+				&& mouseY < bounds.bottom();
+	}
+
 	private static boolean intersects(BundleOverlayPlacement.SlotRect a, BundleOverlayPlacement.SlotRect b) {
 		return a.x() < b.right()
 				&& a.right() > b.x()
