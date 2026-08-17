@@ -1,0 +1,17 @@
+{
+	"schemaVersion": 1,
+	"id": "better_bundles_test",
+	"version": "${version}",
+	"name": "Better Bundles Game Tests",
+	"environment": "*",
+	"entrypoints": {
+		"fabric-gametest": [
+			"better_bundles.gametest.ModLoadsGameTest"
+		]
+	},
+	"depends": {
+		"better_bundles": "*",
+		"fabric-api": "*",
+		"minecraft": "~1.21.11"
+	}
+}

@@ -1,0 +1,33 @@
+{
+	"schemaVersion": 1,
+	"id": "better_bundles",
+	"version": "${version}",
+	"name": "Better Bundles",
+	"description": "Accessible 2×2 bundle storage with grid-aligned hover overlay.",
+	"authors": [
+		"spicato"
+	],
+	"license": "CC0-1.0",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"better_bundles.BetterBundles"
+		],
+		"client": [
+			"better_bundles.BetterBundlesClient"
+		]
+	},
+	"mixins": [
+		"better_bundles.mixins.json",
+		{
+			"config": "better_bundles.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.19.3",
+		"minecraft": "~1.21.11",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}
