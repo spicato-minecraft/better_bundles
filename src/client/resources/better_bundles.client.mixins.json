@@ -5,7 +5,8 @@
 	"client": [
 		"AbstractContainerScreenAccessor",
 		"AbstractContainerScreenRenderMixin",
-		"AbstractContainerScreenInputMixin"
+		"AbstractContainerScreenInputMixin",
+		"ScreenBundleOverlayInputMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

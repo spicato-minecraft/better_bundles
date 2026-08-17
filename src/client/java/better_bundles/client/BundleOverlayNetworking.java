@@ -13,16 +13,16 @@ public final class BundleOverlayNetworking {
 	private BundleOverlayNetworking() {
 	}
 
-	public static void sendAction(
+	public static boolean sendAction(
 			AbstractContainerScreen<?> screen,
 			BundleHoverController.ActiveOverlay overlay,
 			int innerSlot,
 			BundleSlotActionPayload.Action action
 	) {
-		sendAction(screen, overlay, innerSlot, action, BundleSlotActionPayload.NO_SOURCE_SLOT);
+		return sendAction(screen, overlay, innerSlot, action, BundleSlotActionPayload.NO_SOURCE_SLOT);
 	}
 
-	public static void sendAction(
+	public static boolean sendAction(
 			AbstractContainerScreen<?> screen,
 			BundleHoverController.ActiveOverlay overlay,
 			int innerSlot,
@@ -30,11 +30,11 @@ public final class BundleOverlayNetworking {
 			int sourceSlotId
 	) {
 		if (screen == null || overlay == null) {
-			return;
+			return false;
 		}
 
 		if (!ClientPlayNetworking.canSend(BundleSlotActionPayload.TYPE)) {
-			return;
+			return false;
 		}
 
 		AbstractContainerMenu menu = screen.getMenu();
@@ -46,5 +46,6 @@ public final class BundleOverlayNetworking {
 				menu.getStateId(),
 				sourceSlotId
 		));
+		return true;
 	}
 }

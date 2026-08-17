@@ -128,18 +128,19 @@ public final class BundleHoverController {
 		OptionalInt innerSlot = overlay.hitInnerSlot(mouseX, mouseY);
 		if (innerSlot.isPresent()) {
 			if (hasShiftDown()) {
-				BundleOverlayNetworking.sendAction(
+				return BundleOverlayNetworking.sendAction(
 						screen,
 						overlay,
 						innerSlot.getAsInt(),
 						BundleSlotActionPayload.Action.SHIFT_MOVE
 				);
-			} else if (doubled) {
-				sendResolvedAction(screen, overlay, innerSlot.getAsInt(), true);
-			} else {
-				sendResolvedAction(screen, overlay, innerSlot.getAsInt(), false);
 			}
-			return true;
+
+			if (doubled) {
+				return sendResolvedAction(screen, overlay, innerSlot.getAsInt(), true);
+			}
+
+			return sendResolvedAction(screen, overlay, innerSlot.getAsInt(), false);
 		}
 
 		return shouldBlockUnderlyingSlot(screen, overlay, mouseX, mouseY);
@@ -157,8 +158,7 @@ public final class BundleHoverController {
 
 		OptionalInt innerSlot = overlay.hitInnerSlot(mouseX, mouseY);
 		if (innerSlot.isPresent() && !screen.getMenu().getCarried().isEmpty()) {
-			sendResolvedAction(screen, overlay, innerSlot.getAsInt(), false);
-			return true;
+			return sendResolvedAction(screen, overlay, innerSlot.getAsInt(), false);
 		}
 
 		return shouldBlockUnderlyingSlot(screen, overlay, mouseX, mouseY);
@@ -360,7 +360,7 @@ public final class BundleHoverController {
 		return obscured.contains(slot.index);
 	}
 
-	private static void sendResolvedAction(
+	private static boolean sendResolvedAction(
 			AbstractContainerScreen<?> screen,
 			ActiveOverlay overlay,
 			int innerSlot,
@@ -368,7 +368,7 @@ public final class BundleHoverController {
 	) {
 		AbstractContainerMenu menu = screen.getMenu();
 		ItemStack carried = menu.getCarried();
-		ItemStack inner = BundleInventoryAccess.read(overlay.bundleStack()).get(innerSlot);
+		ItemStack inner = BundleInventoryAccess.read(overlay.bundleSlot().getItem()).get(innerSlot);
 
 		BundleSlotActionPayload.Action action;
 		if (doubled
@@ -380,9 +380,11 @@ public final class BundleHoverController {
 			action = resolveAction(carried, inner);
 		}
 
-		if (action != null) {
-			BundleOverlayNetworking.sendAction(screen, overlay, innerSlot, action);
+		if (action == null) {
+			return false;
 		}
+
+		return BundleOverlayNetworking.sendAction(screen, overlay, innerSlot, action);
 	}
 
 	private static BundleSlotActionPayload.Action resolveAction(ItemStack carried, ItemStack inner) {
