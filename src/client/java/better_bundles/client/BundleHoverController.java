@@ -118,8 +118,9 @@ public final class BundleHoverController {
 		}
 
 		ActiveOverlay overlay = current.get();
-		double mouseX = event.x();
-		double mouseY = event.y();
+		double[] mouse = resolveMouse(screen, event);
+		double mouseX = mouse[0];
+		double mouseY = mouse[1];
 
 		if (hasShiftDown() && !overlay.containsOverlayRect(mouseX, mouseY)) {
 			return handleShiftClickIntoBundle(screen, overlay, mouseX, mouseY);
@@ -153,8 +154,9 @@ public final class BundleHoverController {
 		}
 
 		ActiveOverlay overlay = current.get();
-		double mouseX = event.x();
-		double mouseY = event.y();
+		double[] mouse = resolveMouse(screen, event);
+		double mouseX = mouse[0];
+		double mouseY = mouse[1];
 
 		OptionalInt innerSlot = overlay.hitInnerSlot(mouseX, mouseY);
 		if (innerSlot.isPresent() && !screen.getMenu().getCarried().isEmpty()) {
@@ -171,8 +173,9 @@ public final class BundleHoverController {
 		}
 
 		ActiveOverlay overlay = current.get();
-		double mouseX = event.x();
-		double mouseY = event.y();
+		double[] mouse = resolveMouse(screen, event);
+		double mouseX = mouse[0];
+		double mouseY = mouse[1];
 
 		if (shouldBlockUnderlyingSlot(screen, overlay, mouseX, mouseY)) {
 			return true;
@@ -406,5 +409,17 @@ public final class BundleHoverController {
 	private static boolean hasShiftDown() {
 		Minecraft minecraft = Minecraft.getInstance();
 		return minecraft != null && minecraft.hasShiftDown();
+	}
+
+	private static double[] resolveMouse(AbstractContainerScreen<?> screen, MouseButtonEvent event) {
+		Minecraft minecraft = Minecraft.getInstance();
+		if (minecraft != null && minecraft.getWindow() != null) {
+			return new double[] {
+					minecraft.mouseHandler.getScaledXPos(minecraft.getWindow()),
+					minecraft.mouseHandler.getScaledYPos(minecraft.getWindow())
+			};
+		}
+
+		return new double[] { event.x(), event.y() };
 	}
 }
