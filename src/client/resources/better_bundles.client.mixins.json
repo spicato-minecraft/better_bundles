@@ -3,7 +3,9 @@
 	"package": "better_bundles.mixin.client",
 	"compatibilityLevel": "JAVA_21",
 	"client": [
-		"AbstractContainerScreenAccessor"
+		"AbstractContainerScreenAccessor",
+		"AbstractContainerScreenRenderMixin",
+		"AbstractContainerScreenInputMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

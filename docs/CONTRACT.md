@@ -28,24 +28,51 @@ Codec shape (persistent):
 
 Maps to `BundleInventory` via the four slot fields; `migrated` tracks one-time conversion from vanilla storage.
 
-## Planned C2S inner-slot action payload (placeholder)
+## C2S inner-slot action payload
 
-Not implemented in Phase 1. Reserved shape for server-authoritative overlay edits:
+Server-authoritative overlay edits. Registered in `BetterBundles` via `PayloadTypeRegistry.playC2S()` and handled by `BundleOverlaySlotHandler` (Phase 2b — server only; no client send yet).
+
+**Payload id:** `better_bundles:bundle_slot_action`
+
+Wire shape (fields in order):
 
 ```json
 {
-  "screenSyncId": "<int>",
-  "containerSlotId": "<int>",
-  "innerSlot": "<int 0..3>",
-  "action": "<enum: PLACE | PICKUP | SWAP>",
-  "carriedRevision": "<int>"
+  "screenSyncId": "<varint>",
+  "containerSlotId": "<varint>",
+  "innerSlot": "<varint 0..3>",
+  "action": "<varint enum ordinal>",
+  "carriedRevision": "<varint>"
 }
 ```
 
-- `screenSyncId`: sync id of the open screen handler (vanilla menu sync id).
-- `containerSlotId`: slot index of the bundle stack in the open container (player inventory or external menu).
-- `innerSlot`: index into the 2×2 inner grid (0 = top-left, 3 = bottom-right).
-- `action`: intended click semantics for the inner slot.
-- `carriedRevision`: monotonic revision of the cursor/carried stack so the server can reject stale clicks.
+| Field | Semantics |
+| --- | --- |
+| `screenSyncId` | Must equal the open menu's `AbstractContainerMenu#getStateId()` when the action is applied. |
+| `containerSlotId` | Slot index of the bundle stack in the open container (player inventory or external menu). |
+| `innerSlot` | Index into the 2×2 inner grid (0 = top-left, 3 = bottom-right). |
+| `action` | `0` PLACE, `1` PICKUP, `2` SWAP, `3` SHIFT_MOVE (stub — rejected until shift-click is implemented). |
+| `carriedRevision` | Must equal the menu's current `getStateId()` so stale cursor clicks are rejected. |
 
-Phase 2+ will define validation, slot policy enforcement (`BundleSlotPolicy`), and server-side application of this payload.
+### Validation (server)
+
+1. Menu `stillValid(player)`.
+2. `screenSyncId == menu.getStateId()`.
+3. `carriedRevision == menu.getStateId()`.
+4. `containerSlotId` is a valid slot index in the open menu.
+5. Item in `containerSlotId` passes `BundleInventoryAccess.isBundleItem`.
+6. `innerSlot` in `0..3`.
+7. `SHIFT_MOVE` is rejected (stub).
+
+### Action semantics
+
+All mutations use `BundleInventoryAccess.read` / `write` and enforce `BundleSlotPolicy.canInsert` for items entering the bundle.
+
+| Action | Preconditions | Effect |
+| --- | --- | --- |
+| PLACE | Carried non-empty; inner slot empty; `canInsert(carried)` | Copies carried into inner slot; clears carried. |
+| PICKUP | Carried empty; inner slot non-empty | Moves inner stack to carried; clears inner slot. |
+| SWAP | Both carried and inner non-empty; `canInsert(carried)` | Exchanges carried and inner stacks. |
+| SHIFT_MOVE | — | Rejected (reserved). |
+
+On success: bundle stack is written back to `containerSlotId`, carried is updated, the container slot is marked changed, and `broadcastChanges()` runs.

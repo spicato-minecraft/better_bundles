@@ -2,7 +2,9 @@
 	"required": true,
 	"package": "better_bundles.mixin",
 	"compatibilityLevel": "JAVA_21",
-	"mixins": [],
+	"mixins": [
+		"BundleItemMixin"
+	],
 	"injectors": {
 		"defaultRequire": 1
 	}
