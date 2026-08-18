@@ -45,22 +45,16 @@ public class BundleStorageGameTest {
 			.set(2, new ItemStack(Items.COBBLESTONE));
 		BundleInventoryAccess.write(bundle, seeded);
 
-		ItemStack firstPick = BundleInteractionLogic.tryPickOne(bundle).orElse(ItemStack.EMPTY);
+		ItemStack firstPick = BundleInteractionLogic.tryPickStack(bundle).orElse(ItemStack.EMPTY);
 		context.assertValueEqual(Items.DIRT, firstPick.getItem(), "First pick should come from slot 0");
-		context.assertValueEqual(1, firstPick.getCount(), "Pick should remove one item at a time");
+		context.assertValueEqual(3, firstPick.getCount(), "Right-click pick should remove the full inner stack");
 
 		BundleInventory afterFirstPick = BundleInventoryAccess.read(bundle);
-		context.assertValueEqual(Items.DIRT, afterFirstPick.get(0).getItem(), "Slot 0 should still hold remaining dirt");
-		context.assertValueEqual(2, afterFirstPick.get(0).getCount(), "Slot 0 dirt count should decrease by one");
+		context.assertTrue(afterFirstPick.get(0).isEmpty(), "Slot 0 should be empty after full pick");
 		context.assertValueEqual(Items.COBBLESTONE, afterFirstPick.get(2).getItem(), "Slot 2 should be untouched after first pick");
 
-		for (int i = 0; i < 2; i++) {
-			BundleInteractionLogic.tryPickOne(bundle);
-		}
-
-		ItemStack thirdPick = BundleInteractionLogic.tryPickOne(bundle).orElse(ItemStack.EMPTY);
-		context.assertValueEqual(Items.COBBLESTONE, thirdPick.getItem(), "After slot 0 is empty, pick should come from slot 2");
-		context.assertTrue(BundleInventoryAccess.read(bundle).get(0).isEmpty(), "Slot 0 should be empty");
+		ItemStack secondPick = BundleInteractionLogic.tryPickStack(bundle).orElse(ItemStack.EMPTY);
+		context.assertValueEqual(Items.COBBLESTONE, secondPick.getItem(), "After slot 0 is empty, pick should come from slot 2");
 		context.assertTrue(BundleInventoryAccess.read(bundle).get(2).isEmpty(), "Slot 2 should be empty after pick");
 
 		context.succeed();

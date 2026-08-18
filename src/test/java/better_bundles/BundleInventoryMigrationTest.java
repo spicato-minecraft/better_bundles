@@ -121,4 +121,24 @@ class BundleInventoryMigrationTest {
 		assertEquals(original.toInventory().get(3).getItem(), decoded.toInventory().get(3).getItem());
 		assertTrue(decoded.migrated());
 	}
+
+	@Test
+	void componentCodec_encodesPartialOccupancy() {
+		BetterBundleContentsComponent original = BetterBundleContentsComponent.fromInventory(
+				BundleInventory.empty().set(0, new ItemStack(Items.SPRUCE_PLANKS, 1)),
+				true
+		);
+
+		BetterBundleContentsComponent.CODEC.encodeStart(JsonOps.INSTANCE, original).getOrThrow();
+
+		BetterBundleContentsComponent decoded = BetterBundleContentsComponent.CODEC
+				.decode(JsonOps.INSTANCE, BetterBundleContentsComponent.CODEC.encodeStart(JsonOps.INSTANCE, original).getOrThrow())
+				.getOrThrow()
+				.getFirst();
+
+		assertEquals(Items.SPRUCE_PLANKS, decoded.toInventory().get(0).getItem());
+		assertTrue(decoded.toInventory().get(1).isEmpty());
+		assertTrue(decoded.toInventory().get(2).isEmpty());
+		assertTrue(decoded.toInventory().get(3).isEmpty());
+	}
 }

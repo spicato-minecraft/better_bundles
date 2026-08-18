@@ -15,46 +15,141 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Read-only 2×2 bundle inner-grid overlay: slot backgrounds plus item icons.
+ * Bundle hover overlay: leather panel chrome plus inner-slot item icons.
  */
 public final class BundleOverlayRenderer {
 
-	private static final Identifier SLOT_SPRITE = Identifier.withDefaultNamespace("container/slot");
 	private static final int DEFAULT_MENU_SLOT_SIZE = 18;
+	private static final int SLOT_HIGHLIGHT_INSET = 4;
+	private static final int SLOT_HIGHLIGHT_SIZE = 24;
+	private static final Identifier SLOT_HIGHLIGHT_BACK_SPRITE = Identifier.withDefaultNamespace(
+			"container/slot_highlight_back"
+	);
+	private static final Identifier SLOT_HIGHLIGHT_FRONT_SPRITE = Identifier.withDefaultNamespace(
+			"container/slot_highlight_front"
+	);
+	/** Fine-tune 16×16 item icons within 18×18 overlay slots. */
+	private static final int ITEM_RENDER_OFFSET_X = -1;
+	private static final int ITEM_RENDER_OFFSET_Y = -1;
 
 	private BundleOverlayRenderer() {
 	}
 
-	public static void render(
+	public static void renderOverlay(
 			GuiGraphics graphics,
 			Font font,
-			BundleHoverController.ActiveOverlay overlay
+			BundleHoverController.ActiveOverlay overlay,
+			int guiLeft,
+			int guiTop,
+			double mouseX,
+			double mouseY
+	) {
+		BundleOverlayPanelChrome.renderStorageBackground(graphics, overlay, guiLeft, guiTop);
+		// Anchor patch overlaps the top inner slots in DL layout; draw highlights and items after it.
+		BundleOverlayPanelChrome.renderAnchorPatch(graphics, overlay, guiLeft, guiTop);
+		renderInnerSlotContent(graphics, font, overlay, guiLeft, guiTop, mouseX, mouseY);
+		BundleOverlayPanelChrome.renderBundleItem(graphics, font, overlay, guiLeft, guiTop);
+	}
+
+	private static void renderInnerSlotContent(
+			GuiGraphics graphics,
+			Font font,
+			BundleHoverController.ActiveOverlay overlay,
+			int guiLeft,
+			int guiTop,
+			double mouseX,
+			double mouseY
+	) {
+		renderHoveredInnerSlotHighlight(graphics, overlay, guiLeft, guiTop, mouseX, mouseY, SLOT_HIGHLIGHT_BACK_SPRITE);
+		renderInnerItems(graphics, font, overlay, guiLeft, guiTop);
+		renderHoveredInnerSlotHighlight(graphics, overlay, guiLeft, guiTop, mouseX, mouseY, SLOT_HIGHLIGHT_FRONT_SPRITE);
+	}
+
+	private static void renderHoveredInnerSlotHighlight(
+			GuiGraphics graphics,
+			BundleHoverController.ActiveOverlay overlay,
+			int guiLeft,
+			int guiTop,
+			double mouseX,
+			double mouseY,
+			Identifier sprite
+	) {
+		overlay.hitInnerSlot(mouseX, mouseY).ifPresent(index -> {
+			BundleOverlayPlacement.SlotRect local = toGuiLocal(overlay.overlayRects()[index], guiLeft, guiTop);
+			graphics.blitSprite(
+					RenderPipelines.GUI_TEXTURED,
+					sprite,
+					local.x() - SLOT_HIGHLIGHT_INSET,
+					local.y() - SLOT_HIGHLIGHT_INSET,
+					SLOT_HIGHLIGHT_SIZE,
+					SLOT_HIGHLIGHT_SIZE
+			);
+		});
+	}
+
+	private static void renderInnerItems(
+			GuiGraphics graphics,
+			Font font,
+			BundleHoverController.ActiveOverlay overlay,
+			int guiLeft,
+			int guiTop
 	) {
 		BundleInventory inventory = BundleInventoryAccess.read(overlay.bundleStack());
 		BundleOverlayPlacement.SlotRect[] rects = overlay.overlayRects();
 
-		for (int index = 0; index < BundleInventory.SLOT_COUNT; index++) {
-			BundleOverlayPlacement.SlotRect rect = rects[index];
-			renderSlotBackground(graphics, rect);
-			ItemStack stack = inventory.get(index);
-			if (!stack.isEmpty()) {
-				renderItem(graphics, font, stack, rect);
-			}
+		for (int index = 0; index < rects.length; index++) {
+			renderItemIfPresent(graphics, font, inventory, toGuiLocal(rects[index], guiLeft, guiTop), index);
 		}
 	}
 
-	private static void renderSlotBackground(GuiGraphics graphics, BundleOverlayPlacement.SlotRect rect) {
-		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SLOT_SPRITE, rect.x(), rect.y(), rect.w(), rect.h());
+	private static BundleOverlayPlacement.SlotRect toGuiLocal(
+			BundleOverlayPlacement.SlotRect rect,
+			int guiLeft,
+			int guiTop
+	) {
+		return new BundleOverlayPlacement.SlotRect(
+				rect.x() - guiLeft,
+				rect.y() - guiTop,
+				rect.w(),
+				rect.h()
+		);
 	}
 
-	private static void renderItem(
+	private static void renderItemIfPresent(
+			GuiGraphics graphics,
+			Font font,
+			BundleInventory inventory,
+			BundleOverlayPlacement.SlotRect rect,
+			int index
+	) {
+		ItemStack stack = inventory.get(index);
+		if (stack.isEmpty()) {
+			return;
+		}
+
+		int itemX = itemRenderX(rect);
+		int itemY = itemRenderY(rect);
+		int seed = rect.x() + rect.y();
+		graphics.renderItem(stack, itemX, itemY, seed);
+		graphics.renderItemDecorations(font, stack, itemX, itemY);
+	}
+
+	static int itemRenderX(BundleOverlayPlacement.SlotRect rect) {
+		return rect.x() + (rect.w() - 16) / 2 + ITEM_RENDER_OFFSET_X;
+	}
+
+	static int itemRenderY(BundleOverlayPlacement.SlotRect rect) {
+		return rect.y() + (rect.h() - 16) / 2 + ITEM_RENDER_OFFSET_Y;
+	}
+
+	public static void renderItemInSlot(
 			GuiGraphics graphics,
 			Font font,
 			ItemStack stack,
 			BundleOverlayPlacement.SlotRect rect
 	) {
-		int itemX = rect.x() + (rect.w() - 16) / 2;
-		int itemY = rect.y() + (rect.h() - 16) / 2;
+		int itemX = itemRenderX(rect);
+		int itemY = itemRenderY(rect);
 		int seed = rect.x() + rect.y();
 		graphics.renderItem(stack, itemX, itemY, seed);
 		graphics.renderItemDecorations(font, stack, itemX, itemY);
@@ -78,7 +173,6 @@ public final class BundleOverlayRenderer {
 
 	/**
 	 * Menu slot indices whose on-screen bounds intersect the overlay bounding box.
-	 * Used by click-blocking logic in a later phase.
 	 */
 	public static Set<Integer> computeObscuredSlotIndices(
 			AbstractContainerScreen<?> screen,
@@ -113,17 +207,6 @@ public final class BundleOverlayRenderer {
 			BundleOverlayPlacement.SlotRect[] overlayRects
 	) {
 		return computeObscuredSlotIndices(screen, boundingBox(overlayRects));
-	}
-
-	/**
-	 * True when a screen-space point lies inside the overlay bounding box (inner slots only).
-	 */
-	public static boolean containsOverlayBounds(BundleOverlayPlacement.SlotRect[] overlayRects, double mouseX, double mouseY) {
-		BundleOverlayPlacement.SlotRect bounds = boundingBox(overlayRects);
-		return mouseX >= bounds.x()
-				&& mouseX < bounds.right()
-				&& mouseY >= bounds.y()
-				&& mouseY < bounds.bottom();
 	}
 
 	private static boolean intersects(BundleOverlayPlacement.SlotRect a, BundleOverlayPlacement.SlotRect b) {

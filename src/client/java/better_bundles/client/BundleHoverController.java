@@ -9,6 +9,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
@@ -133,15 +134,20 @@ public final class BundleHoverController {
 						screen,
 						overlay,
 						innerSlot.getAsInt(),
-						BundleSlotActionPayload.Action.SHIFT_MOVE
+						BundleSlotActionPayload.Action.SHIFT_MOVE,
+						event.button()
 				);
 			}
 
 			if (doubled) {
-				return sendResolvedAction(screen, overlay, innerSlot.getAsInt(), true);
+				return sendResolvedAction(screen, overlay, innerSlot.getAsInt(), event.button(), true);
 			}
 
-			return sendResolvedAction(screen, overlay, innerSlot.getAsInt(), false);
+			return sendResolvedAction(screen, overlay, innerSlot.getAsInt(), event.button(), false);
+		}
+
+		if (!screen.getMenu().getCarried().isEmpty()) {
+			return false;
 		}
 
 		return shouldBlockUnderlyingSlot(screen, overlay, mouseX, mouseY);
@@ -158,12 +164,53 @@ public final class BundleHoverController {
 		double mouseX = mouse[0];
 		double mouseY = mouse[1];
 
-		OptionalInt innerSlot = overlay.hitInnerSlot(mouseX, mouseY);
-		if (innerSlot.isPresent() && !screen.getMenu().getCarried().isEmpty()) {
-			return sendResolvedAction(screen, overlay, innerSlot.getAsInt(), false);
+		if (!screen.getMenu().getCarried().isEmpty()) {
+			if (consumeSkipNextRelease(screen)) {
+				return true;
+			}
+
+			// Vanilla places via mouse click, not release. Block null-slot release handling
+			// over inner overlay slots while still allowing normal placement elsewhere.
+			if (overlay.hitInnerSlot(mouseX, mouseY).isPresent()) {
+				return true;
+			}
+
+			return false;
 		}
 
 		return shouldBlockUnderlyingSlot(screen, overlay, mouseX, mouseY);
+	}
+
+	public boolean handleOverlayClickType(
+			AbstractContainerScreen<?> screen,
+			ActiveOverlay overlay,
+			int innerSlot,
+			ClickType clickType
+	) {
+		return switch (clickType) {
+			case PICKUP -> sendResolvedAction(
+					screen,
+					overlay,
+					innerSlot,
+					BundleSlotActionPayload.MOUSE_BUTTON_PRIMARY,
+					false
+			);
+			case QUICK_MOVE -> BundleOverlayNetworking.sendAction(
+					screen,
+					overlay,
+					innerSlot,
+					BundleSlotActionPayload.Action.SHIFT_MOVE,
+					BundleSlotActionPayload.MOUSE_BUTTON_PRIMARY
+			);
+			case PICKUP_ALL -> sendResolvedAction(
+					screen,
+					overlay,
+					innerSlot,
+					BundleSlotActionPayload.MOUSE_BUTTON_PRIMARY,
+					true
+			);
+			default -> false;
+		};
 	}
 
 	public boolean shouldBlockOverlayMouse(AbstractContainerScreen<?> screen, MouseButtonEvent event) {
@@ -221,12 +268,7 @@ public final class BundleHoverController {
 	}
 
 	private void openPanel(AbstractContainerScreen<?> screen, Slot slot) {
-		Optional<ResolvedPlacement> placement = GridAnchorResolver.resolvePlacement(
-				screen,
-				slot,
-				screen.width,
-				screen.height
-		);
+		Optional<ResolvedPlacement> placement = GridAnchorResolver.resolvePlacement(screen, slot);
 
 		if (placement.isEmpty()) {
 			close();
@@ -245,9 +287,7 @@ public final class BundleHoverController {
 	private ActiveOverlay refreshOverlay(AbstractContainerScreen<?> screen, ActiveOverlay overlay) {
 		Optional<ResolvedPlacement> placement = GridAnchorResolver.resolvePlacement(
 				screen,
-				overlay.bundleSlot(),
-				screen.width,
-				screen.height
+				overlay.bundleSlot()
 		);
 
 		if (placement.isEmpty()) {
@@ -334,7 +374,8 @@ public final class BundleHoverController {
 				overlay,
 				targetInner,
 				BundleSlotActionPayload.Action.SHIFT_MOVE,
-				slot.index
+				slot.index,
+				BundleSlotActionPayload.MOUSE_BUTTON_PRIMARY
 		);
 		return true;
 	}
@@ -363,10 +404,21 @@ public final class BundleHoverController {
 		return obscured.contains(slot.index);
 	}
 
+	private static boolean consumeSkipNextRelease(AbstractContainerScreen<?> screen) {
+		AbstractContainerScreenAccessor accessor = (AbstractContainerScreenAccessor) screen;
+		if (!accessor.better_bundles$getSkipNextRelease()) {
+			return false;
+		}
+
+		accessor.better_bundles$setSkipNextRelease(false);
+		return true;
+	}
+
 	private static boolean sendResolvedAction(
 			AbstractContainerScreen<?> screen,
 			ActiveOverlay overlay,
 			int innerSlot,
+			int mouseButton,
 			boolean doubled
 	) {
 		AbstractContainerMenu menu = screen.getMenu();
@@ -387,7 +439,11 @@ public final class BundleHoverController {
 			return false;
 		}
 
-		return BundleOverlayNetworking.sendAction(screen, overlay, innerSlot, action);
+		boolean sent = BundleOverlayNetworking.sendAction(screen, overlay, innerSlot, action, mouseButton);
+		if (sent && (action == BundleSlotActionPayload.Action.PICKUP || action == BundleSlotActionPayload.Action.PLACE)) {
+			((AbstractContainerScreenAccessor) screen).better_bundles$setSkipNextRelease(true);
+		}
+		return sent;
 	}
 
 	private static BundleSlotActionPayload.Action resolveAction(ItemStack carried, ItemStack inner) {
@@ -400,6 +456,9 @@ public final class BundleHoverController {
 		}
 
 		if (!carried.isEmpty() && !inner.isEmpty()) {
+			if (ItemStack.isSameItemSameComponents(carried, inner)) {
+				return BundleSlotActionPayload.Action.PLACE;
+			}
 			return BundleSlotActionPayload.Action.SWAP;
 		}
 
@@ -412,14 +471,18 @@ public final class BundleHoverController {
 	}
 
 	private static double[] resolveMouse(AbstractContainerScreen<?> screen, MouseButtonEvent event) {
+		return new double[] { event.x(), event.y() };
+	}
+
+	public static double[] currentMousePosition() {
 		Minecraft minecraft = Minecraft.getInstance();
-		if (minecraft != null && minecraft.getWindow() != null) {
-			return new double[] {
-					minecraft.mouseHandler.getScaledXPos(minecraft.getWindow()),
-					minecraft.mouseHandler.getScaledYPos(minecraft.getWindow())
-			};
+		if (minecraft == null || minecraft.getWindow() == null) {
+			return new double[] { 0.0, 0.0 };
 		}
 
-		return new double[] { event.x(), event.y() };
+		return new double[] {
+				minecraft.mouseHandler.getScaledXPos(minecraft.getWindow()),
+				minecraft.mouseHandler.getScaledYPos(minecraft.getWindow())
+		};
 	}
 }

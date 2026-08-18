@@ -252,24 +252,9 @@ public final class GridAnchorResolverLogic {
 	public static BundleOverlayPlacement.PlacementInput toPlacementInput(
 			SlotClassification classification,
 			int slotPitchW,
-			int slotPitchH,
-			int viewportWidth,
-			int viewportHeight,
-			int bundleScreenX,
-			int bundleScreenY
+			int slotPitchH
 	) {
-		return new BundleOverlayPlacement.PlacementInput(
-				classification.gridWidth(),
-				classification.gridHeight(),
-				classification.slotIndexInGrid(),
-				slotPitchW,
-				slotPitchH,
-				viewportWidth,
-				viewportHeight,
-				classification.hostGrid() == HostGridKind.HOTBAR,
-				bundleScreenX,
-				bundleScreenY
-		);
+		return new BundleOverlayPlacement.PlacementInput(slotPitchW, slotPitchH);
 	}
 
 	public static BundleOverlayPlacement.SlotRect toScreenRect(

@@ -11,4 +11,14 @@ public interface AbstractContainerScreenAccessor {
 
 	@Accessor("topPos")
 	int better_bundles$getTopPos();
+
+	@Accessor("hoveredSlot")
+	net.minecraft.world.inventory.Slot better_bundles$getHoveredSlot();
+
+	@Accessor("skipNextRelease")
+	boolean better_bundles$getSkipNextRelease();
+
+	@Accessor("skipNextRelease")
+	@org.spongepowered.asm.mixin.Mutable
+	void better_bundles$setSkipNextRelease(boolean skipNextRelease);
 }

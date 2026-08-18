@@ -26,9 +26,6 @@ public final class GridAnchorResolver {
 
 	private static final Logger LOGGER = LogUtils.getLogger();
 
-	/** Temporary dev toggle; prefer {@link Logger#isDebugEnabled()} in call sites. */
-	public static final boolean DEBUG_PLACEMENT_RECTS = false;
-
 	private static final int DEFAULT_SLOT_PITCH = 18;
 
 	private GridAnchorResolver() {
@@ -107,11 +104,12 @@ public final class GridAnchorResolver {
 
 	public static Optional<ResolvedPlacement> resolvePlacement(
 			AbstractContainerScreen<?> screen,
-			Slot slot,
-			int viewportWidth,
-			int viewportHeight
+			Slot slot
 	) {
 		return resolve(screen, slot).map(anchor -> {
+			AbstractContainerMenu menu = screen.getMenu();
+			MenuLayout layout = detectMenuLayout(screen, menu);
+			int containerSlotCount = containerSlotCount(menu, layout);
 			SlotClassification classification = new SlotClassification(
 					true,
 					anchor.hostGrid(),
@@ -123,11 +121,7 @@ public final class GridAnchorResolver {
 			BundleOverlayPlacement.PlacementInput input = GridAnchorResolverLogic.toPlacementInput(
 					classification,
 					anchor.slotPitchW(),
-					anchor.slotPitchH(),
-					viewportWidth,
-					viewportHeight,
-					anchor.slotRect().x(),
-					anchor.slotRect().y()
+					anchor.slotPitchH()
 			);
 
 			BundleOverlayPlacement.PlacementResult placement = BundleOverlayPlacement.compute(input);
@@ -144,7 +138,11 @@ public final class GridAnchorResolver {
 	}
 
 	private static MenuLayout detectMenuLayout(AbstractContainerScreen<?> screen, AbstractContainerMenu menu) {
-		if (screen instanceof InventoryScreen || menu instanceof InventoryMenu) {
+		if (menu instanceof InventoryMenu) {
+			return MenuLayout.PLAYER_INVENTORY;
+		}
+
+		if (screen instanceof InventoryScreen) {
 			return MenuLayout.PLAYER_INVENTORY;
 		}
 
@@ -175,7 +173,7 @@ public final class GridAnchorResolver {
 	}
 
 	private static int containerSlotCount(AbstractContainerMenu menu, MenuLayout layout) {
-		if (layout == MenuLayout.PLAYER_INVENTORY) {
+		if (layout == MenuLayout.PLAYER_INVENTORY || menu instanceof InventoryMenu) {
 			return 0;
 		}
 
@@ -280,7 +278,7 @@ public final class GridAnchorResolver {
 	}
 
 	private static void logDebugAnchor(AbstractContainerScreen<?> screen, Slot slot, ResolvedAnchor anchor) {
-		if (!DEBUG_PLACEMENT_RECTS && !LOGGER.isDebugEnabled()) {
+		if (!LOGGER.isDebugEnabled()) {
 			return;
 		}
 
@@ -302,17 +300,12 @@ public final class GridAnchorResolver {
 	}
 
 	private static void logDebugPlacement(ResolvedPlacement resolved) {
-		if (!DEBUG_PLACEMENT_RECTS && !LOGGER.isDebugEnabled()) {
+		if (!LOGGER.isDebugEnabled()) {
 			return;
 		}
 
-		BundleOverlayPlacement.PlacementResult placement = resolved.placement();
 		LOGGER.debug(
-				"Overlay placement dir=({},{}), flipped=({},{}), screenRects=[({},{}), ({},{}), ({},{}), ({},{})]",
-				placement.dirX(),
-				placement.dirY(),
-				placement.flippedX(),
-				placement.flippedY(),
+				"Overlay placement screenRects=[({},{}), ({},{}), ({},{}), ({},{})]",
 				resolved.overlayScreenRects()[0].x(),
 				resolved.overlayScreenRects()[0].y(),
 				resolved.overlayScreenRects()[1].x(),

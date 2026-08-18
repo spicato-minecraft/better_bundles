@@ -88,11 +88,44 @@ class BundleOverlaySlotHandlerTest {
 			BundleInventoryAccess.read(bundleStack()).set(1, new ItemStack(Items.IRON_INGOT, 3))
 		);
 
-		assertTrue(BundleOverlaySlotHandler.handle(menu, player, payload(Action.PICKUP, 1)));
+		assertTrue(BundleOverlaySlotHandler.handle(
+				menu,
+				player,
+				payload(Action.PICKUP, 1, BundleSlotActionPayload.MOUSE_BUTTON_PRIMARY)
+		));
 		assertTrue(carriedStack.is(Items.IRON_INGOT));
 		assertEquals(3, carriedStack.getCount());
 		assertTrue(BundleInventoryAccess.read(bundleStack()).get(1).isEmpty());
 		verify(menu).broadcastChanges();
+	}
+
+	@Test
+	void pickupSecondary_splitsStackInHalf() {
+		BundleInventoryAccess.write(
+			bundleStack(),
+			BundleInventoryAccess.read(bundleStack()).set(0, new ItemStack(Items.IRON_INGOT, 5))
+		);
+
+		assertTrue(BundleOverlaySlotHandler.handle(
+				menu,
+				player,
+				payload(Action.PICKUP, 0, BundleSlotActionPayload.MOUSE_BUTTON_SECONDARY)
+		));
+		assertEquals(3, carriedStack.getCount());
+		assertEquals(2, BundleInventoryAccess.read(bundleStack()).get(0).getCount());
+	}
+
+	@Test
+	void placeSecondary_movesOneItemFromCarried() {
+		carriedStack = new ItemStack(Items.GOLD_INGOT, 5);
+
+		assertTrue(BundleOverlaySlotHandler.handle(
+				menu,
+				player,
+				payload(Action.PLACE, 2, BundleSlotActionPayload.MOUSE_BUTTON_SECONDARY)
+		));
+		assertEquals(4, carriedStack.getCount());
+		assertEquals(1, BundleInventoryAccess.read(bundleStack()).get(2).getCount());
 	}
 
 	@Test
@@ -156,7 +189,8 @@ class BundleOverlaySlotHandlerTest {
 			0,
 			Action.SHIFT_MOVE,
 			SYNC_ID,
-			PLAYER_SLOT
+			PLAYER_SLOT,
+			BundleSlotActionPayload.MOUSE_BUTTON_PRIMARY
 		);
 
 		assertTrue(BundleOverlaySlotHandler.handle(menu, player, shiftIn));
@@ -180,7 +214,8 @@ class BundleOverlaySlotHandlerTest {
 			0,
 			Action.PLACE,
 			SYNC_ID - 1,
-			BundleSlotActionPayload.NO_SOURCE_SLOT
+			BundleSlotActionPayload.NO_SOURCE_SLOT,
+			BundleSlotActionPayload.MOUSE_BUTTON_PRIMARY
 		);
 
 		assertFalse(BundleOverlaySlotHandler.handle(menu, player, staleRevision));
@@ -243,13 +278,18 @@ class BundleOverlaySlotHandlerTest {
 	}
 
 	private static BundleSlotActionPayload payload(Action action, int innerSlot) {
+		return payload(action, innerSlot, BundleSlotActionPayload.MOUSE_BUTTON_PRIMARY);
+	}
+
+	private static BundleSlotActionPayload payload(Action action, int innerSlot, int mouseButton) {
 		return new BundleSlotActionPayload(
 			SYNC_ID,
 			BUNDLE_SLOT,
 			innerSlot,
 			action,
 			SYNC_ID,
-			BundleSlotActionPayload.NO_SOURCE_SLOT
+			BundleSlotActionPayload.NO_SOURCE_SLOT,
+			mouseButton
 		);
 	}
 

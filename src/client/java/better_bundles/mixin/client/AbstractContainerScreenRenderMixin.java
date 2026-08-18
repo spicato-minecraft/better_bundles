@@ -2,9 +2,11 @@ package better_bundles.mixin.client;
 
 import better_bundles.client.BundleHoverController;
 import better_bundles.client.BundleOverlayRenderer;
+import better_bundles.inventory.BundleInventoryAccess;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.world.inventory.Slot;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -14,10 +16,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class AbstractContainerScreenRenderMixin {
 
 	@Inject(
-			method = "render",
+			method = "renderContents",
 			at = @At(
 					value = "INVOKE",
-					target = "Lnet/minecraft/client/gui/screens/inventory/AbstractContainerScreen;renderContents(Lnet/minecraft/client/gui/GuiGraphics;IIF)V",
+					target = "Lnet/minecraft/client/gui/screens/inventory/AbstractContainerScreen;renderSlotHighlightFront(Lnet/minecraft/client/gui/GuiGraphics;)V",
 					shift = At.Shift.AFTER
 			)
 	)
@@ -33,8 +35,34 @@ public abstract class AbstractContainerScreenRenderMixin {
 			return;
 		}
 
+		AbstractContainerScreen<?> screen = (AbstractContainerScreen<?>) (Object) this;
+		AbstractContainerScreenAccessor pos = (AbstractContainerScreenAccessor) screen;
 		BundleHoverController.getInstance().getActive().ifPresent(overlay ->
-				BundleOverlayRenderer.render(graphics, minecraft.font, overlay)
+				BundleOverlayRenderer.renderOverlay(
+						graphics,
+						minecraft.font,
+						overlay,
+						pos.better_bundles$getLeftPos(),
+						pos.better_bundles$getTopPos(),
+						mouseX,
+						mouseY
+				)
 		);
+	}
+
+	@Inject(method = "renderTooltip", at = @At("HEAD"), cancellable = true)
+	private void better_bundles$suppressVanillaBundleTooltip(GuiGraphics graphics, int mouseX, int mouseY, CallbackInfo ci) {
+		if (shouldSuppressBundleTooltip((AbstractContainerScreen<?>) (Object) this)) {
+			ci.cancel();
+		}
+	}
+
+	private static boolean shouldSuppressBundleTooltip(AbstractContainerScreen<?> screen) {
+		if (BundleHoverController.getInstance().getActive().isPresent()) {
+			return true;
+		}
+
+		Slot hovered = ((AbstractContainerScreenAccessor) screen).better_bundles$getHoveredSlot();
+		return hovered != null && BundleInventoryAccess.isBundleItem(hovered.getItem());
 	}
 }

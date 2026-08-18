@@ -16,10 +16,13 @@ public record BundleSlotActionPayload(
 	int innerSlot,
 	Action action,
 	int carriedRevision,
-	int sourceSlotId
+	int sourceSlotId,
+	int mouseButton
 ) implements CustomPacketPayload {
 
 	public static final int NO_SOURCE_SLOT = -1;
+	public static final int MOUSE_BUTTON_PRIMARY = 0;
+	public static final int MOUSE_BUTTON_SECONDARY = 1;
 
 	public static final Identifier ID = Identifier.fromNamespaceAndPath(BetterBundles.MOD_ID, "bundle_slot_action");
 	public static final CustomPacketPayload.Type<BundleSlotActionPayload> TYPE = new CustomPacketPayload.Type<>(ID);
@@ -37,6 +40,8 @@ public record BundleSlotActionPayload(
 		BundleSlotActionPayload::carriedRevision,
 		ByteBufCodecs.VAR_INT,
 		BundleSlotActionPayload::sourceSlotId,
+		ByteBufCodecs.VAR_INT,
+		BundleSlotActionPayload::mouseButton,
 		BundleSlotActionPayload::fromWire
 	);
 
@@ -46,7 +51,8 @@ public record BundleSlotActionPayload(
 		int innerSlot,
 		int actionOrdinal,
 		int carriedRevision,
-		int sourceSlotId
+		int sourceSlotId,
+		int mouseButton
 	) {
 		return new BundleSlotActionPayload(
 			screenSyncId,
@@ -54,7 +60,8 @@ public record BundleSlotActionPayload(
 			innerSlot,
 			decodeAction(actionOrdinal),
 			carriedRevision,
-			sourceSlotId
+			sourceSlotId,
+			mouseButton
 		);
 	}
 

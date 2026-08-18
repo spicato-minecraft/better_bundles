@@ -53,12 +53,12 @@ public abstract class BundleItemMixin {
 		ItemStack slotStack = slot.getItem();
 
 		if (action == ClickAction.PRIMARY && !slotStack.isEmpty()) {
-			BundleInteractionLogic.InsertResult result = BundleInteractionLogic.tryInsertOne(bundleStack, slotStack);
+			BundleInteractionLogic.InsertResult result = BundleInteractionLogic.tryInsert(bundleStack, slotStack);
 			if (result.inserted()) {
 				if (!result.ejected().isEmpty()) {
 					ItemStack overflow = slot.safeInsert(result.ejected());
 					if (!overflow.isEmpty()) {
-						BundleInteractionLogic.tryInsertOne(bundleStack, overflow);
+						BundleInteractionLogic.tryInsert(bundleStack, overflow);
 					}
 				}
 				playInsertSound(player);
@@ -71,11 +71,11 @@ public abstract class BundleItemMixin {
 		}
 
 		if (action == ClickAction.SECONDARY && slotStack.isEmpty()) {
-			Optional<ItemStack> picked = BundleInteractionLogic.tryPickOne(bundleStack);
+			Optional<ItemStack> picked = BundleInteractionLogic.tryPickStack(bundleStack);
 			if (picked.isPresent()) {
 				ItemStack overflow = slot.safeInsert(picked.get());
 				if (!overflow.isEmpty()) {
-					BundleInteractionLogic.tryInsertOne(bundleStack, overflow);
+					BundleInteractionLogic.tryInsert(bundleStack, overflow);
 				}
 				playRemoveOneSound(player);
 			}
@@ -112,7 +112,7 @@ public abstract class BundleItemMixin {
 				return;
 			}
 
-			BundleInteractionLogic.InsertResult result = BundleInteractionLogic.tryInsertOne(bundleStack, otherStack);
+			BundleInteractionLogic.InsertResult result = BundleInteractionLogic.tryInsert(bundleStack, otherStack);
 			if (result.inserted()) {
 				if (!result.ejected().isEmpty()) {
 					if (otherStack.isEmpty()) {
@@ -132,7 +132,7 @@ public abstract class BundleItemMixin {
 
 		if (action == ClickAction.SECONDARY && otherStack.isEmpty()) {
 			if (slot.allowModification(player)) {
-				Optional<ItemStack> picked = BundleInteractionLogic.tryPickOne(bundleStack);
+				Optional<ItemStack> picked = BundleInteractionLogic.tryPickStack(bundleStack);
 				if (picked.isPresent()) {
 					playRemoveOneSound(player);
 					cursorAccess.set(picked.get());

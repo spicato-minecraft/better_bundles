@@ -16,13 +16,22 @@ public record BetterBundleContentsComponent(
 	boolean migrated
 ) {
 
+	private static final Codec<ItemStack> SLOT_CODEC = ItemStack.OPTIONAL_CODEC;
+
 	public static final Codec<BetterBundleContentsComponent> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-		ItemStack.CODEC.fieldOf("slot0").forGetter(BetterBundleContentsComponent::slot0),
-		ItemStack.CODEC.fieldOf("slot1").forGetter(BetterBundleContentsComponent::slot1),
-		ItemStack.CODEC.fieldOf("slot2").forGetter(BetterBundleContentsComponent::slot2),
-		ItemStack.CODEC.fieldOf("slot3").forGetter(BetterBundleContentsComponent::slot3),
+		SLOT_CODEC.fieldOf("slot0").forGetter(BetterBundleContentsComponent::slot0),
+		SLOT_CODEC.fieldOf("slot1").forGetter(BetterBundleContentsComponent::slot1),
+		SLOT_CODEC.fieldOf("slot2").forGetter(BetterBundleContentsComponent::slot2),
+		SLOT_CODEC.fieldOf("slot3").forGetter(BetterBundleContentsComponent::slot3),
 		Codec.BOOL.fieldOf("migrated").forGetter(BetterBundleContentsComponent::migrated)
 	).apply(instance, BetterBundleContentsComponent::new));
+
+	public BetterBundleContentsComponent {
+		slot0 = normalizeSlot(slot0);
+		slot1 = normalizeSlot(slot1);
+		slot2 = normalizeSlot(slot2);
+		slot3 = normalizeSlot(slot3);
+	}
 
 	public BundleInventory toInventory() {
 		return new BundleInventory(slot0, slot1, slot2, slot3);
@@ -36,5 +45,9 @@ public record BetterBundleContentsComponent(
 			inventory.slot3(),
 			migrated
 		);
+	}
+
+	private static ItemStack normalizeSlot(ItemStack stack) {
+		return stack == null || stack.isEmpty() ? ItemStack.EMPTY : stack;
 	}
 }

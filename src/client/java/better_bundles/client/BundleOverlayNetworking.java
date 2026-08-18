@@ -17,9 +17,17 @@ public final class BundleOverlayNetworking {
 			AbstractContainerScreen<?> screen,
 			BundleHoverController.ActiveOverlay overlay,
 			int innerSlot,
-			BundleSlotActionPayload.Action action
+			BundleSlotActionPayload.Action action,
+			int mouseButton
 	) {
-		return sendAction(screen, overlay, innerSlot, action, BundleSlotActionPayload.NO_SOURCE_SLOT);
+		return sendAction(
+				screen,
+				overlay,
+				innerSlot,
+				action,
+				BundleSlotActionPayload.NO_SOURCE_SLOT,
+				mouseButton
+		);
 	}
 
 	public static boolean sendAction(
@@ -27,7 +35,8 @@ public final class BundleOverlayNetworking {
 			BundleHoverController.ActiveOverlay overlay,
 			int innerSlot,
 			BundleSlotActionPayload.Action action,
-			int sourceSlotId
+			int sourceSlotId,
+			int mouseButton
 	) {
 		if (screen == null || overlay == null) {
 			return false;
@@ -44,7 +53,8 @@ public final class BundleOverlayNetworking {
 				innerSlot,
 				action,
 				menu.getStateId(),
-				sourceSlotId
+				sourceSlotId,
+				mouseButton
 		));
 		return true;
 	}

@@ -35,8 +35,8 @@ public final class BundleOverlaySlotHandler {
 		ItemStack carried = menu.getCarried();
 
 		ApplyResult result = switch (payload.action()) {
-			case PLACE -> applyPlace(inventory, carried, payload.innerSlot());
-			case PICKUP -> applyPickup(inventory, carried, payload.innerSlot());
+			case PLACE -> applyPlace(inventory, carried, payload.innerSlot(), payload.mouseButton());
+			case PICKUP -> applyPickup(inventory, carried, payload.innerSlot(), payload.mouseButton());
 			case SWAP -> applySwap(inventory, carried, payload.innerSlot());
 			case SHIFT_MOVE -> applyShiftMove(menu, player, inventory, payload);
 			case MERGE -> applyMerge(inventory, carried, payload.innerSlot());
@@ -91,25 +91,61 @@ public final class BundleOverlaySlotHandler {
 		return innerSlot >= 0 && innerSlot < BundleInventory.SLOT_COUNT;
 	}
 
-	private static ApplyResult applyPlace(BundleInventory inventory, ItemStack carried, int innerSlot) {
-		if (carried.isEmpty() || !inventory.get(innerSlot).isEmpty()) {
+	private static ApplyResult applyPlace(BundleInventory inventory, ItemStack carried, int innerSlot, int mouseButton) {
+		if (carried.isEmpty() || !BundleSlotPolicy.canInsert(carried)) {
 			return null;
 		}
 
-		if (!BundleSlotPolicy.canInsert(carried)) {
+		ItemStack innerStack = inventory.get(innerSlot);
+		boolean primary = mouseButton == BundleSlotActionPayload.MOUSE_BUTTON_PRIMARY;
+
+		if (innerStack.isEmpty()) {
+			int amount = primary ? carried.getCount() : 1;
+			amount = Math.min(amount, carried.getMaxStackSize());
+			ItemStack placed = carried.copyWithCount(amount);
+			ItemStack newCarried = carried.copy();
+			newCarried.shrink(amount);
+			if (newCarried.isEmpty()) {
+				newCarried = ItemStack.EMPTY;
+			}
+			return new ApplyResult(inventory.set(innerSlot, placed), newCarried);
+		}
+
+		if (!ItemStack.isSameItemSameComponents(carried, innerStack)) {
 			return null;
 		}
 
-		return new ApplyResult(inventory.set(innerSlot, carried.copy()), ItemStack.EMPTY);
+		int space = innerStack.getMaxStackSize() - innerStack.getCount();
+		if (space <= 0) {
+			return null;
+		}
+
+		int amount = primary ? carried.getCount() : 1;
+		int toPlace = Math.min(amount, space);
+		ItemStack merged = innerStack.copy();
+		merged.grow(toPlace);
+		ItemStack newCarried = carried.copy();
+		newCarried.shrink(toPlace);
+		if (newCarried.isEmpty()) {
+			newCarried = ItemStack.EMPTY;
+		}
+		return new ApplyResult(inventory.set(innerSlot, merged), newCarried);
 	}
 
-	private static ApplyResult applyPickup(BundleInventory inventory, ItemStack carried, int innerSlot) {
+	private static ApplyResult applyPickup(BundleInventory inventory, ItemStack carried, int innerSlot, int mouseButton) {
 		ItemStack innerStack = inventory.get(innerSlot);
 		if (!carried.isEmpty() || innerStack.isEmpty()) {
 			return null;
 		}
 
-		return new ApplyResult(inventory.set(innerSlot, ItemStack.EMPTY), innerStack.copy());
+		boolean primary = mouseButton == BundleSlotActionPayload.MOUSE_BUTTON_PRIMARY;
+		int amount = primary ? innerStack.getCount() : (innerStack.getCount() + 1) / 2;
+		ItemStack picked = innerStack.copyWithCount(amount);
+		ItemStack remaining = innerStack.copyWithCount(innerStack.getCount() - amount);
+		if (remaining.isEmpty()) {
+			remaining = ItemStack.EMPTY;
+		}
+		return new ApplyResult(inventory.set(innerSlot, remaining), picked);
 	}
 
 	private static ApplyResult applySwap(BundleInventory inventory, ItemStack carried, int innerSlot) {

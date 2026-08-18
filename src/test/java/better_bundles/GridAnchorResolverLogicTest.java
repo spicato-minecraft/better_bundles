@@ -130,42 +130,25 @@ class GridAnchorResolverLogicTest {
 	}
 
 	@Test
-	void toPlacementInputMarksHotbarGrid() {
+	void toPlacementInputUsesSlotPitch() {
 		SlotClassification hotbar = GridAnchorResolverLogic.classifyInventoryMenuSlot(36);
-		BundleOverlayPlacement.PlacementInput input = GridAnchorResolverLogic.toPlacementInput(
-				hotbar,
-				PITCH,
-				PITCH,
-				400,
-				300,
-				80,
-				200
-		);
+		BundleOverlayPlacement.PlacementInput input = GridAnchorResolverLogic.toPlacementInput(hotbar, PITCH, PITCH);
 
-		assertTrue(input.hotbarGrid());
-		assertEquals(9, input.gridWidth());
-		assertEquals(1, input.gridHeight());
+		assertEquals(PITCH, input.slotPitchW());
+		assertEquals(PITCH, input.slotPitchH());
 	}
 
 	@Test
 	void toScreenRectsTranslatesRelativePlacement() {
 		SlotClassification main = GridAnchorResolverLogic.classifyInventoryMenuSlot(13);
-		BundleOverlayPlacement.PlacementInput input = GridAnchorResolverLogic.toPlacementInput(
-				main,
-				PITCH,
-				PITCH,
-				400,
-				300,
-				80,
-				60
-		);
+		BundleOverlayPlacement.PlacementInput input = GridAnchorResolverLogic.toPlacementInput(main, PITCH, PITCH);
 		BundleOverlayPlacement.PlacementResult placement = BundleOverlayPlacement.compute(input);
 		BundleOverlayPlacement.SlotRect[] screenRects = GridAnchorResolverLogic.toScreenRects(placement, 80, 60);
 
-		assertEquals(new BundleOverlayPlacement.SlotRect(44, 24, PITCH, PITCH), screenRects[0]);
-		assertEquals(new BundleOverlayPlacement.SlotRect(62, 24, PITCH, PITCH), screenRects[1]);
-		assertEquals(new BundleOverlayPlacement.SlotRect(44, 42, PITCH, PITCH), screenRects[2]);
-		assertEquals(new BundleOverlayPlacement.SlotRect(62, 42, PITCH, PITCH), screenRects[3]);
+		assertEquals(new BundleOverlayPlacement.SlotRect(80, 78, PITCH, PITCH), screenRects[0]);
+		assertEquals(new BundleOverlayPlacement.SlotRect(98, 78, PITCH, PITCH), screenRects[1]);
+		assertEquals(new BundleOverlayPlacement.SlotRect(80, 96, PITCH, PITCH), screenRects[2]);
+		assertEquals(new BundleOverlayPlacement.SlotRect(98, 96, PITCH, PITCH), screenRects[3]);
 	}
 
 	@Test
@@ -185,64 +168,5 @@ class GridAnchorResolverLogicTest {
 		assertEquals(5, middle.gridWidth());
 		assertEquals(1, middle.gridHeight());
 		assertEquals(2, middle.slotIndexInGrid());
-	}
-
-	@Test
-	void hopperMiddleSlotOpensUpAndLeft() {
-		SlotClassification hopperSlot = new SlotClassification(true, HostGridKind.CONTAINER, 5, 1, 2);
-		BundleOverlayPlacement.PlacementInput input = GridAnchorResolverLogic.toPlacementInput(
-				hopperSlot,
-				PITCH,
-				PITCH,
-				400,
-				300,
-				80,
-				60
-		);
-		BundleOverlayPlacement.PlacementResult result = BundleOverlayPlacement.compute(input);
-
-		assertEquals(-1, result.dirX());
-		assertEquals(-1, result.dirY());
-		assertEquals(new BundleOverlayPlacement.SlotRect(-36, -36, PITCH, PITCH), result.slot0());
-	}
-
-	@Test
-	void chestContainerUpperLeftOpensUpAndLeft() {
-		int containerSlots = 27;
-		SlotClassification slot = GridAnchorResolverLogic.classifyStandardContainerMenuSlot(0, containerSlots);
-		BundleOverlayPlacement.PlacementInput input = GridAnchorResolverLogic.toPlacementInput(
-				slot,
-				PITCH,
-				PITCH,
-				400,
-				300,
-				80,
-				60
-		);
-		BundleOverlayPlacement.PlacementResult result = BundleOverlayPlacement.compute(input);
-
-		assertEquals(-1, result.dirX());
-		assertEquals(-1, result.dirY());
-		assertEquals(new BundleOverlayPlacement.SlotRect(-36, -36, PITCH, PITCH), result.slot0());
-	}
-
-	@Test
-	void chestContainerLowerRightOpensDownAndRight() {
-		int containerSlots = 27;
-		SlotClassification slot = GridAnchorResolverLogic.classifyStandardContainerMenuSlot(26, containerSlots);
-		BundleOverlayPlacement.PlacementInput input = GridAnchorResolverLogic.toPlacementInput(
-				slot,
-				PITCH,
-				PITCH,
-				400,
-				300,
-				170,
-				120
-		);
-		BundleOverlayPlacement.PlacementResult result = BundleOverlayPlacement.compute(input);
-
-		assertEquals(1, result.dirX());
-		assertEquals(1, result.dirY());
-		assertEquals(new BundleOverlayPlacement.SlotRect(PITCH, PITCH, PITCH, PITCH), result.slot0());
 	}
 }
