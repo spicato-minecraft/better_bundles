@@ -1,8 +1,7 @@
 package better_bundles.mixin.client;
 
-import better_bundles.inventory.BundleInventoryAccess;
 import net.minecraft.world.inventory.tooltip.TooltipComponent;
-import net.minecraft.world.item.Item;
+import net.minecraft.world.item.BundleItem;
 import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -11,7 +10,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Optional;
 
-@Mixin(Item.class)
+@Mixin(BundleItem.class)
 public abstract class BundleTooltipSuppressMixin {
 
 	@Inject(method = "getTooltipImage", at = @At("HEAD"), cancellable = true)
@@ -19,8 +18,6 @@ public abstract class BundleTooltipSuppressMixin {
 			ItemStack stack,
 			CallbackInfoReturnable<Optional<TooltipComponent>> cir
 	) {
-		if (BundleInventoryAccess.isBundleItem(stack)) {
-			cir.setReturnValue(Optional.empty());
-		}
+		cir.setReturnValue(Optional.empty());
 	}
 }

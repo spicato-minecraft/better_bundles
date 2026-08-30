@@ -51,18 +51,23 @@ public abstract class AbstractContainerScreenRenderMixin {
 	}
 
 	@Inject(method = "renderTooltip", at = @At("HEAD"), cancellable = true)
-	private void better_bundles$suppressVanillaBundleTooltip(GuiGraphics graphics, int mouseX, int mouseY, CallbackInfo ci) {
-		if (shouldSuppressBundleTooltip((AbstractContainerScreen<?>) (Object) this)) {
+	private void better_bundles$suppressVanillaBundleSlotTooltip(
+			GuiGraphics graphics,
+			int mouseX,
+			int mouseY,
+			CallbackInfo ci
+	) {
+		AbstractContainerScreen<?> screen = (AbstractContainerScreen<?>) (Object) this;
+		BundleHoverController controller = BundleHoverController.getInstance();
+		var overlay = controller.getActive();
+		if (overlay.isPresent() && overlay.get().hitInnerSlot(mouseX, mouseY).isPresent()) {
 			ci.cancel();
-		}
-	}
-
-	private static boolean shouldSuppressBundleTooltip(AbstractContainerScreen<?> screen) {
-		if (BundleHoverController.getInstance().getActive().isPresent()) {
-			return true;
+			return;
 		}
 
 		Slot hovered = ((AbstractContainerScreenAccessor) screen).better_bundles$getHoveredSlot();
-		return hovered != null && BundleInventoryAccess.isBundleItem(hovered.getItem());
+		if (hovered != null && BundleInventoryAccess.isBundleItem(hovered.getItem())) {
+			ci.cancel();
+		}
 	}
 }

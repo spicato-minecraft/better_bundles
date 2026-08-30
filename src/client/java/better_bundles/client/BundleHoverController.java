@@ -3,10 +3,12 @@ package better_bundles.client;
 import better_bundles.client.GridAnchorResolver.ResolvedAnchor;
 import better_bundles.client.GridAnchorResolver.ResolvedPlacement;
 import better_bundles.inventory.BundleInventoryAccess;
+import better_bundles.inventory.CreativeInventoryMenuSlots;
 import better_bundles.mixin.client.AbstractContainerScreenAccessor;
 import better_bundles.network.BundleSlotActionPayload;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ClickType;
@@ -312,7 +314,16 @@ public final class BundleHoverController {
 	}
 
 	private static boolean isSupportedBundleSlot(AbstractContainerScreen<?> screen, Slot slot) {
-		return BundleInventoryAccess.isBundleItem(slot.getItem()) && GridAnchorResolver.resolve(screen, slot).isPresent();
+		if (!BundleInventoryAccess.isBundleItem(slot.getItem())) {
+			return false;
+		}
+
+		if (screen instanceof CreativeModeInventoryScreen
+				&& CreativeInventoryMenuSlots.toInventoryMenuIndex(slot).isEmpty()) {
+			return false;
+		}
+
+		return GridAnchorResolver.resolve(screen, slot).isPresent();
 	}
 
 	private static Optional<Slot> findHoveredSlot(AbstractContainerScreen<?> screen, double mouseX, double mouseY) {

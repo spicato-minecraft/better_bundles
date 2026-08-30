@@ -3,15 +3,21 @@ package better_bundles.client;
 import better_bundles.inventory.BundleInventory;
 import better_bundles.inventory.BundleInventoryAccess;
 import better_bundles.mixin.client.AbstractContainerScreenAccessor;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.gui.screens.inventory.tooltip.DefaultTooltipPositioner;
 import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
+import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -63,6 +69,44 @@ public final class BundleOverlayRenderer {
 		renderHoveredInnerSlotHighlight(graphics, overlay, guiLeft, guiTop, mouseX, mouseY, SLOT_HIGHLIGHT_BACK_SPRITE);
 		renderInnerItems(graphics, font, overlay, guiLeft, guiTop);
 		renderHoveredInnerSlotHighlight(graphics, overlay, guiLeft, guiTop, mouseX, mouseY, SLOT_HIGHLIGHT_FRONT_SPRITE);
+	}
+
+	/**
+	 * Queues a standard item tooltip for the inner overlay slot under the cursor.
+	 * Uses replace-existing so this wins over an earlier empty/vanilla queue.
+	 * Hit-testing is overlay rects only: tooltip bounds do not keep the panel open.
+	 */
+	public static void queueInnerSlotTooltip(
+			GuiGraphics graphics,
+			Font font,
+			AbstractContainerScreen<?> screen,
+			BundleHoverController.ActiveOverlay overlay,
+			int mouseX,
+			int mouseY
+	) {
+		if (!screen.getMenu().getCarried().isEmpty()) {
+			return;
+		}
+
+		overlay.hitInnerSlot(mouseX, mouseY).ifPresent(index -> {
+			ItemStack stack = BundleInventoryAccess.read(overlay.bundleSlot().getItem()).get(index);
+			if (stack.isEmpty()) {
+				return;
+			}
+
+			List<FormattedCharSequence> lines = Screen.getTooltipFromItem(Minecraft.getInstance(), stack)
+					.stream()
+					.map(Component::getVisualOrderText)
+					.toList();
+			graphics.setTooltipForNextFrame(
+					font,
+					lines,
+					DefaultTooltipPositioner.INSTANCE,
+					mouseX,
+					mouseY,
+					true
+			);
+		});
 	}
 
 	private static void renderHoveredInnerSlotHighlight(

@@ -6,7 +6,8 @@
 		"AbstractContainerScreenAccessor",
 		"AbstractContainerScreenRenderMixin",
 		"AbstractContainerScreenInputMixin",
-		"BundleTooltipSuppressMixin"
+		"BundleTooltipSuppressMixin",
+		"ScreenDeferredTooltipMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
