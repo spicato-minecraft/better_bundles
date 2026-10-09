@@ -30,7 +30,7 @@ Maps to `BundleInventory` via the four slot fields; `migrated` tracks one-time c
 
 ## C2S inner-slot action payload
 
-Server-authoritative overlay edits. Registered in `BetterBundles` via `PayloadTypeRegistry.playC2S()`, sent by `BundleOverlayNetworking`, and handled by `BundleOverlaySlotHandler`.
+Server-authoritative overlay edits. Registered in `BetterBundles` via `PayloadTypeRegistry.serverboundPlay()`, sent by `BundleOverlayNetworking`, and handled by `BundleOverlaySlotHandler`.
 
 **Payload id:** `better_bundles:bundle_slot_action`
 

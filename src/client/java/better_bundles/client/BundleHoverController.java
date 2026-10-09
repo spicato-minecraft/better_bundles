@@ -11,7 +11,7 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
@@ -187,9 +187,9 @@ public final class BundleHoverController {
 			AbstractContainerScreen<?> screen,
 			ActiveOverlay overlay,
 			int innerSlot,
-			ClickType clickType
+			ContainerInput containerInput
 	) {
-		return switch (clickType) {
+		return switch (containerInput) {
 			case PICKUP -> sendResolvedAction(
 					screen,
 					overlay,
@@ -262,11 +262,36 @@ public final class BundleHoverController {
 			return;
 		}
 
+		// Inner overlay rows extend over menu slots below the anchor (often another bundle).
+		// Do not retarget hover to those slots while the user is using this panel.
+		if (shouldIgnoreOtherBundleHover(active, screen, mouseX, mouseY)) {
+			return;
+		}
+
 		findHoveredBundleSlot(screen, mouseX, mouseY).ifPresent(slot -> {
 			if (slot != active.bundleSlot()) {
 				openPanel(screen, slot);
 			}
 		});
+	}
+
+	public static boolean shouldIgnoreOtherBundleHover(
+			ActiveOverlay active,
+			AbstractContainerScreen<?> screen,
+			double mouseX,
+			double mouseY
+	) {
+		if (active.containsOverlayRect(mouseX, mouseY)) {
+			return true;
+		}
+
+		Optional<Slot> hovered = findHoveredSlot(screen, mouseX, mouseY);
+		if (hovered.isEmpty()) {
+			return false;
+		}
+
+		Set<Integer> obscured = BundleOverlayRenderer.computeObscuredSlotIndices(screen, active.overlayRects());
+		return obscured.contains(hovered.get().index);
 	}
 
 	private void openPanel(AbstractContainerScreen<?> screen, Slot slot) {

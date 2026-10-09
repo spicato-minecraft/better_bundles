@@ -1,15 +1,15 @@
 # Better Bundles
 
-Fabric mod for Minecraft **1.21.11** that upgrades vanilla bundles into practical mini-containers: a custom **2×2 slot panel** opened by hovering over a bundle in any supported container grid.
+Fabric mod for Minecraft **26.1** that upgrades vanilla bundles into practical mini-containers: a custom **2×2 slot panel** opened by hovering over a bundle in any supported container grid.
 
 ## Compatibility
 
 | Component     | Version           |
 |---------------|-------------------|
-| Minecraft     | 1.21.11           |
+| Minecraft     | 26.1              |
 | Fabric Loader | 0.19.3+           |
-| Fabric API    | 0.141.6+1.21.11   |
-| Java          | 21+               |
+| Fabric API    | 0.145.1+26.1      |
+| Java          | 25+               |
 
 ## Build
 
@@ -31,21 +31,21 @@ The output JAR is at `build/libs/better_bundles-1.0.0.jar` (version from `gradle
 
 ## Install
 
-1. Install [Fabric Loader](https://fabricmc.net/use/) for Minecraft 1.21.11.
-2. Download [Fabric API](https://modrinth.com/mod/fabric-api) for 1.21.11 and place it in your mods folder.
+1. Install [Fabric Loader](https://fabricmc.net/use/) for Minecraft 26.1.
+2. Download [Fabric API](https://modrinth.com/mod/fabric-api) for 26.1 and place it in your mods folder.
 3. Copy the built JAR into your Minecraft `mods` folder.
 
 ## Branch Policy
 
 Each supported Minecraft version has its own long-lived branch named after the exact `minecraft_version` in `gradle.properties`. Version branches are the source of truth; `main` is not used.
 
-- **Default branch:** `1.21.11`
+- **Default branch:** `26.1` (also `1.21.11` for the prior game release)
 - **Feature/fix work:** branch from the target version as `{version}/feature-name`, merge back into the version branch
 
 ```bash
 git clone https://github.com/spicato-minecraft/better_bundles.git
 cd better_bundles
-git checkout 1.21.11
+git checkout 26.1
 ```
 
 ## Releases and Modrinth

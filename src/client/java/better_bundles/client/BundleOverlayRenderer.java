@@ -5,7 +5,7 @@ import better_bundles.inventory.BundleInventoryAccess;
 import better_bundles.mixin.client.AbstractContainerScreenAccessor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.tooltip.DefaultTooltipPositioner;
@@ -42,7 +42,7 @@ public final class BundleOverlayRenderer {
 	}
 
 	public static void renderOverlay(
-			GuiGraphics graphics,
+			GuiGraphicsExtractor graphics,
 			Font font,
 			BundleHoverController.ActiveOverlay overlay,
 			int guiLeft,
@@ -58,7 +58,7 @@ public final class BundleOverlayRenderer {
 	}
 
 	private static void renderInnerSlotContent(
-			GuiGraphics graphics,
+			GuiGraphicsExtractor graphics,
 			Font font,
 			BundleHoverController.ActiveOverlay overlay,
 			int guiLeft,
@@ -77,7 +77,7 @@ public final class BundleOverlayRenderer {
 	 * Hit-testing is overlay rects only: tooltip bounds do not keep the panel open.
 	 */
 	public static void queueInnerSlotTooltip(
-			GuiGraphics graphics,
+			GuiGraphicsExtractor graphics,
 			Font font,
 			AbstractContainerScreen<?> screen,
 			BundleHoverController.ActiveOverlay overlay,
@@ -101,16 +101,18 @@ public final class BundleOverlayRenderer {
 			graphics.setTooltipForNextFrame(
 					font,
 					lines,
+					java.util.Optional.empty(),
 					DefaultTooltipPositioner.INSTANCE,
 					mouseX,
 					mouseY,
-					true
+					true,
+					null
 			);
 		});
 	}
 
 	private static void renderHoveredInnerSlotHighlight(
-			GuiGraphics graphics,
+			GuiGraphicsExtractor graphics,
 			BundleHoverController.ActiveOverlay overlay,
 			int guiLeft,
 			int guiTop,
@@ -132,7 +134,7 @@ public final class BundleOverlayRenderer {
 	}
 
 	private static void renderInnerItems(
-			GuiGraphics graphics,
+			GuiGraphicsExtractor graphics,
 			Font font,
 			BundleHoverController.ActiveOverlay overlay,
 			int guiLeft,
@@ -160,7 +162,7 @@ public final class BundleOverlayRenderer {
 	}
 
 	private static void renderItemIfPresent(
-			GuiGraphics graphics,
+			GuiGraphicsExtractor graphics,
 			Font font,
 			BundleInventory inventory,
 			BundleOverlayPlacement.SlotRect rect,
@@ -174,8 +176,8 @@ public final class BundleOverlayRenderer {
 		int itemX = itemRenderX(rect);
 		int itemY = itemRenderY(rect);
 		int seed = rect.x() + rect.y();
-		graphics.renderItem(stack, itemX, itemY, seed);
-		graphics.renderItemDecorations(font, stack, itemX, itemY);
+		graphics.item(stack, itemX, itemY, seed);
+		graphics.itemDecorations(font, stack, itemX, itemY);
 	}
 
 	static int itemRenderX(BundleOverlayPlacement.SlotRect rect) {
@@ -187,7 +189,7 @@ public final class BundleOverlayRenderer {
 	}
 
 	public static void renderItemInSlot(
-			GuiGraphics graphics,
+			GuiGraphicsExtractor graphics,
 			Font font,
 			ItemStack stack,
 			BundleOverlayPlacement.SlotRect rect
@@ -195,8 +197,8 @@ public final class BundleOverlayRenderer {
 		int itemX = itemRenderX(rect);
 		int itemY = itemRenderY(rect);
 		int seed = rect.x() + rect.y();
-		graphics.renderItem(stack, itemX, itemY, seed);
-		graphics.renderItemDecorations(font, stack, itemX, itemY);
+		graphics.item(stack, itemX, itemY, seed);
+		graphics.itemDecorations(font, stack, itemX, itemY);
 	}
 
 	public static BundleOverlayPlacement.SlotRect boundingBox(BundleOverlayPlacement.SlotRect[] overlayRects) {

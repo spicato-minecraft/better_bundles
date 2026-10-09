@@ -39,7 +39,7 @@ class BundleInventoryMigrationTest {
 		BundleInventory inventory = BundleInventoryAccess.read(bundle);
 
 		int slot = 0;
-		for (ItemStack item : vanillaContents.itemsCopy()) {
+		for (ItemStack item : vanillaContents.itemCopyStream().toList()) {
 			if (slot >= BundleInventory.SLOT_COUNT) {
 				break;
 			}

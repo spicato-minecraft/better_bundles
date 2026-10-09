@@ -4,7 +4,7 @@ import better_bundles.client.BundleHoverController;
 import better_bundles.client.BundleOverlayRenderer;
 import better_bundles.inventory.BundleInventoryAccess;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.world.inventory.Slot;
 import org.spongepowered.asm.mixin.Mixin;
@@ -16,15 +16,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class AbstractContainerScreenRenderMixin {
 
 	@Inject(
-			method = "renderContents",
+			method = "extractContents",
 			at = @At(
 					value = "INVOKE",
-					target = "Lnet/minecraft/client/gui/screens/inventory/AbstractContainerScreen;renderSlotHighlightFront(Lnet/minecraft/client/gui/GuiGraphics;)V",
+					target = "Lnet/minecraft/client/gui/screens/inventory/AbstractContainerScreen;extractSlotHighlightFront(Lnet/minecraft/client/gui/GuiGraphicsExtractor;)V",
 					shift = At.Shift.AFTER
 			)
 	)
 	private void better_bundles$renderBundleOverlay(
-			GuiGraphics graphics,
+			GuiGraphicsExtractor graphics,
 			int mouseX,
 			int mouseY,
 			float delta,
@@ -50,9 +50,9 @@ public abstract class AbstractContainerScreenRenderMixin {
 		);
 	}
 
-	@Inject(method = "renderTooltip", at = @At("HEAD"), cancellable = true)
+	@Inject(method = "extractTooltip", at = @At("HEAD"), cancellable = true)
 	private void better_bundles$suppressVanillaBundleSlotTooltip(
-			GuiGraphics graphics,
+			GuiGraphicsExtractor graphics,
 			int mouseX,
 			int mouseY,
 			CallbackInfo ci

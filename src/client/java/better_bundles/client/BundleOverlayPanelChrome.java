@@ -2,7 +2,7 @@ package better_bundles.client;
 
 import better_bundles.inventory.BundleInventoryAccess;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
@@ -16,7 +16,7 @@ public final class BundleOverlayPanelChrome {
 	}
 
 	public static void renderStorageBackground(
-			GuiGraphics graphics,
+			GuiGraphicsExtractor graphics,
 			BundleHoverController.ActiveOverlay overlay,
 			int guiLeft,
 			int guiTop
@@ -25,7 +25,7 @@ public final class BundleOverlayPanelChrome {
 	}
 
 	public static void renderAnchorPatch(
-			GuiGraphics graphics,
+			GuiGraphicsExtractor graphics,
 			BundleHoverController.ActiveOverlay overlay,
 			int guiLeft,
 			int guiTop
@@ -34,7 +34,7 @@ public final class BundleOverlayPanelChrome {
 	}
 
 	public static void renderBundleItem(
-			GuiGraphics graphics,
+			GuiGraphicsExtractor graphics,
 			Font font,
 			BundleHoverController.ActiveOverlay overlay,
 			int guiLeft,
@@ -44,7 +44,7 @@ public final class BundleOverlayPanelChrome {
 	}
 
 	private static void blitSprite(
-			GuiGraphics graphics,
+			GuiGraphicsExtractor graphics,
 			BundleHoverController.ActiveOverlay overlay,
 			int guiLeft,
 			int guiTop
@@ -68,7 +68,7 @@ public final class BundleOverlayPanelChrome {
 	}
 
 	private static void blitAnchorPatch(
-			GuiGraphics graphics,
+			GuiGraphicsExtractor graphics,
 			BundleHoverController.ActiveOverlay overlay,
 			int guiLeft,
 			int guiTop
@@ -99,7 +99,7 @@ public final class BundleOverlayPanelChrome {
 	}
 
 	private static void blitSpriteRegion(
-			GuiGraphics graphics,
+			GuiGraphicsExtractor graphics,
 			Identifier texture,
 			int destX,
 			int destY,
@@ -127,7 +127,7 @@ public final class BundleOverlayPanelChrome {
 	}
 
 	private static void renderBundleItemOnAnchor(
-			GuiGraphics graphics,
+			GuiGraphicsExtractor graphics,
 			Font font,
 			BundleHoverController.ActiveOverlay overlay,
 			int guiLeft,

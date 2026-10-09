@@ -22,7 +22,7 @@ public class BetterBundles implements ModInitializer {
 	}
 
 	private static void registerNetworking() {
-		PayloadTypeRegistry.playC2S().register(BundleSlotActionPayload.TYPE, BundleSlotActionPayload.CODEC);
+		PayloadTypeRegistry.serverboundPlay().register(BundleSlotActionPayload.TYPE, BundleSlotActionPayload.CODEC);
 
 		ServerPlayNetworking.registerGlobalReceiver(BundleSlotActionPayload.TYPE, (payload, context) -> {
 			context.server().execute(() -> {

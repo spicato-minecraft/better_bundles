@@ -4,7 +4,7 @@ import better_bundles.client.BundleHoverController;
 import better_bundles.inventory.BundleInventoryAccess;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
@@ -31,17 +31,19 @@ public abstract class AbstractContainerScreenInputMixin {
 			CallbackInfoReturnable<Slot> cir
 	) {
 		BundleHoverController controller = BundleHoverController.getInstance();
-		if (controller.getActive().isEmpty()) {
+		var active = controller.getActive();
+		if (active.isEmpty()) {
 			return;
 		}
 
-		if (controller.isPointInOverlay(mouseX, mouseY)) {
+		AbstractContainerScreen<?> screen = (AbstractContainerScreen<?>) (Object) this;
+		if (BundleHoverController.shouldIgnoreOtherBundleHover(active.get(), screen, mouseX, mouseY)) {
 			cir.setReturnValue(null);
 		}
 	}
 
 	@Inject(method = "onMouseClickAction", at = @At("HEAD"), cancellable = true)
-	private void better_bundles$overlayOnMouseClickAction(Slot slot, ClickType clickType, CallbackInfo ci) {
+	private void better_bundles$overlayOnMouseClickAction(Slot slot, ContainerInput containerInput, CallbackInfo ci) {
 		AbstractContainerScreen<?> screen = (AbstractContainerScreen<?>) (Object) this;
 		BundleHoverController controller = BundleHoverController.getInstance();
 		var active = controller.getActive();
@@ -55,7 +57,7 @@ public abstract class AbstractContainerScreenInputMixin {
 			return;
 		}
 
-		if (controller.handleOverlayClickType(screen, active.get(), innerSlot.getAsInt(), clickType)) {
+		if (controller.handleOverlayClickType(screen, active.get(), innerSlot.getAsInt(), containerInput)) {
 			ci.cancel();
 		}
 	}
