@@ -29,9 +29,19 @@ fabricApi {
 		createSourceSet = true
 		modId = "better_bundles_test"
 		enableGameTests = true
-		enableClientGameTests = false
+		enableClientGameTests = true
 		eula = true
 	}
+}
+
+// Client GameTests live in the gametest source set. Loom runs them with the client, but that
+// source set does not otherwise see client-only Minecraft or this mod's client classes.
+sourceSets.named("gametest") {
+	def client = sourceSets.named("client").get()
+	compileClasspath += client.output
+	compileClasspath += client.compileClasspath
+	runtimeClasspath += client.output
+	runtimeClasspath += client.runtimeClasspath
 }
 
 dependencies {

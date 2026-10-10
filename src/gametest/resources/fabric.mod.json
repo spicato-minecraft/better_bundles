@@ -7,7 +7,12 @@
 	"entrypoints": {
 		"fabric-gametest": [
 			"better_bundles.gametest.ModLoadsGameTest",
-			"better_bundles.gametest.BundleStorageGameTest"
+			"better_bundles.gametest.BundleStorageGameTest",
+			"better_bundles.gametest.ServerMixinApplySweepGameTest"
+		],
+		"fabric-client-gametest": [
+			"better_bundles.clientgametest.ClientMixinApplySweepGameTest",
+			"better_bundles.clientgametest.HoverOverlayMovesItemGameTest"
 		]
 	},
 	"depends": {

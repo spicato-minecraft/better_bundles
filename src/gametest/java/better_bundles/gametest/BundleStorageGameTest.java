@@ -7,11 +7,16 @@ import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.BundleItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
+import net.minecraft.world.phys.AABB;
 
 public class BundleStorageGameTest {
 
@@ -150,6 +155,69 @@ public class BundleStorageGameTest {
 		BundleInventory onGround = BundleInventoryAccess.read(entity.getItem());
 		context.assertValueEqual(Items.DIAMOND, onGround.get(0).getItem(), "Death drop item entity should keep inner diamond stack");
 		context.assertValueEqual(2, onGround.get(0).getCount(), "Death drop item entity should keep inner diamond count");
+
+		context.succeed();
+	}
+
+	@GameTest(maxTicks = 100)
+	public void dropOneEmptiesOneSlot(GameTestHelper context) {
+		ServerPlayer player = context.makeMockServerPlayerInLevel();
+		BlockPos dropPos = context.absolutePos(new BlockPos(1, 2, 1));
+		player.teleportTo(dropPos.getX() + 0.5, dropPos.getY(), dropPos.getZ() + 0.5);
+		ItemStack bundle = new ItemStack(Items.BUNDLE);
+		BundleInventory seeded = BundleInventory.empty()
+				.set(0, new ItemStack(Items.DIRT, 1))
+				.set(1, new ItemStack(Items.COBBLESTONE, 4));
+		BundleInventoryAccess.write(bundle, seeded);
+		player.setItemInHand(InteractionHand.MAIN_HAND, bundle);
+
+		ItemStack held = player.getMainHandItem();
+		context.assertTrue(held.getItem() instanceof BundleItem, "Main hand should hold a bundle");
+		BundleItem bundleItem = (BundleItem) held.getItem();
+		// onUseTick is the production caller of the private dropContent path the mixin replaces.
+		bundleItem.onUseTick(player.level(), player, held, bundleItem.getUseDuration(held, player));
+
+		BundleInventory after = BundleInventoryAccess.read(held);
+		context.assertTrue(after.get(0).isEmpty(), "Dropping one item should empty the slot that held a single item");
+		context.assertValueEqual(Items.COBBLESTONE, after.get(1).getItem(), "The other slot's item should be unchanged");
+		context.assertValueEqual(4, after.get(1).getCount(), "The other slot's count should be unchanged");
+		context.assertTrue(after.get(2).isEmpty(), "Slot 2 should stay empty");
+		context.assertTrue(after.get(3).isEmpty(), "Slot 3 should stay empty");
+
+		AABB dropArea = new AABB(dropPos).inflate(4.0);
+		var dirtDrops = context.getLevel().getEntities(
+				EntityTypes.ITEM,
+				dropArea,
+				entity -> entity.getItem().is(Items.DIRT)
+		);
+		context.assertValueEqual(1, dirtDrops.size(), "Drop should spawn the single dirt item");
+		context.assertValueEqual(1, dirtDrops.getFirst().getItem().getCount(), "Dropped dirt should be one item");
+
+		var cobbleDrops = context.getLevel().getEntities(
+				EntityTypes.ITEM,
+				dropArea,
+				entity -> entity.getItem().is(Items.COBBLESTONE)
+		);
+		context.assertTrue(cobbleDrops.isEmpty(), "The other slot should not drop");
+
+		context.succeed();
+	}
+
+	@GameTest(maxTicks = 100)
+	public void shulkerInsertRejected(GameTestHelper context) {
+		ItemStack bundle = new ItemStack(Items.BUNDLE);
+		ItemStack shulkerInHand = new ItemStack(Items.SHULKER_BOX);
+
+		BundleInteractionLogic.InsertResult result = BundleInteractionLogic.tryInsertOne(bundle, shulkerInHand);
+		context.assertFalse(result.inserted(), "Shulker insert should be rejected");
+		context.assertTrue(result.ejected().isEmpty(), "Rejected shulker insert should not eject");
+		context.assertValueEqual(Items.SHULKER_BOX, shulkerInHand.getItem(), "Shulker should remain in hand");
+		context.assertValueEqual(1, shulkerInHand.getCount(), "Shulker in hand should stay a single item");
+
+		BundleInventory inventory = BundleInventoryAccess.read(bundle);
+		for (int slot = 0; slot < BundleInventory.SLOT_COUNT; slot++) {
+			context.assertTrue(inventory.get(slot).isEmpty(), "Slot " + slot + " should stay empty");
+		}
 
 		context.succeed();
 	}
