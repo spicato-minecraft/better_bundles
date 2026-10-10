@@ -67,7 +67,7 @@ class BundleInventoryMigrationTest {
 
 	@Test
 	void writeAndRead_roundTripPreservesInventory() {
-		ItemStack bundle = new ItemStack(Items.BLUE_BUNDLE);
+		ItemStack bundle = new ItemStack(Items.DYED_BUNDLE.blue());
 		BundleInventory original = BundleInventory.empty()
 			.set(0, new ItemStack(Items.APPLE, 4))
 			.set(2, new ItemStack(Items.BREAD, 1));

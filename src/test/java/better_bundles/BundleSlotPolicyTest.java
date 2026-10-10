@@ -24,7 +24,7 @@ class BundleSlotPolicyTest {
 	@Test
 	void shulkerInBundle_isBlocked() {
 		assertFalse(BundleSlotPolicy.canInsert(new ItemStack(Items.SHULKER_BOX)));
-		assertFalse(BundleSlotPolicy.canInsert(new ItemStack(Items.RED_SHULKER_BOX)));
+		assertFalse(BundleSlotPolicy.canInsert(new ItemStack(Items.DYED_SHULKER_BOX.red())));
 	}
 
 	@Test
