@@ -15,6 +15,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import net.minecraft.util.Prediction;
 import net.minecraft.world.level.Level;
 
 import java.util.Optional;
@@ -118,7 +119,7 @@ public abstract class BundleItemMixin {
 					if (otherStack.isEmpty()) {
 						cursorAccess.set(result.ejected());
 					} else if (!player.getInventory().add(result.ejected())) {
-						player.drop(result.ejected(), false);
+						player.drop(result.ejected(), false, Prediction.PREDICTED);
 					}
 				}
 				playInsertSound(player);
@@ -161,7 +162,7 @@ public abstract class BundleItemMixin {
 		}
 
 		playRemoveOneSound(player);
-		player.drop(picked.get(), true);
+		player.drop(picked.get(), true, Prediction.PREDICTED);
 		cir.setReturnValue(true);
 		cir.cancel();
 	}

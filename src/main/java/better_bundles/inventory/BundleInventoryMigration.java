@@ -27,7 +27,7 @@ public final class BundleInventoryMigration {
 		BundleInventory inventory = BundleInventory.empty();
 		int slot = 0;
 
-		for (ItemStack item : contents.itemCopyStream().toList()) {
+		for (ItemStack item : contents.itemCopies().toList()) {
 			if (slot >= BundleInventory.SLOT_COUNT) {
 				break;
 			}

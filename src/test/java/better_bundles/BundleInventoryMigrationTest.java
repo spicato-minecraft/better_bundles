@@ -27,7 +27,7 @@ class BundleInventoryMigrationTest {
 	@Test
 	void migrate_copiesVanillaContentsIntoSlotsInOrder() {
 		ItemStack bundle = new ItemStack(Items.BUNDLE);
-		BundleContents.Mutable mutable = new BundleContents.Mutable(BundleContents.EMPTY);
+		BundleContents.Mutable mutable = new BundleContents.Mutable();
 		mutable.tryInsert(new ItemStack(Items.IRON_INGOT, 3));
 		mutable.tryInsert(new ItemStack(Items.GOLD_INGOT, 1));
 		mutable.tryInsert(new ItemStack(Items.EMERALD, 2));
@@ -39,7 +39,7 @@ class BundleInventoryMigrationTest {
 		BundleInventory inventory = BundleInventoryAccess.read(bundle);
 
 		int slot = 0;
-		for (ItemStack item : vanillaContents.itemCopyStream().toList()) {
+		for (ItemStack item : vanillaContents.itemCopies().toList()) {
 			if (slot >= BundleInventory.SLOT_COUNT) {
 				break;
 			}
