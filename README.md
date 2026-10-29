@@ -19,7 +19,7 @@ From this directory:
 ./gradlew build
 ```
 
-The output JAR is at `build/libs/better_bundles-1.0.0.jar` (version from `gradle.properties`).
+The output JAR is at `build/libs/better_bundles-1.1.1.jar` (version from `gradle.properties`).
 
 ## Test
 
