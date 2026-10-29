@@ -129,6 +129,64 @@ class BundleOverlaySlotHandlerTest {
 	}
 
 	@Test
+	void leftClick_placesFullStack() {
+		carriedStack = new ItemStack(Items.GOLD_INGOT, 16);
+
+		assertTrue(BundleOverlaySlotHandler.handle(
+				menu,
+				player,
+				payload(Action.PLACE, 2, BundleSlotActionPayload.containerButton(BundleSlotActionPayload.EVENT_BUTTON_LEFT))
+		));
+		assertTrue(carriedStack.isEmpty());
+		assertEquals(16, BundleInventoryAccess.read(bundleStack()).get(2).getCount());
+	}
+
+	@Test
+	void leftClick_picksUpFullStack() {
+		BundleInventoryAccess.write(
+			bundleStack(),
+			BundleInventoryAccess.read(bundleStack()).set(0, new ItemStack(Items.IRON_INGOT, 10))
+		);
+
+		assertTrue(BundleOverlaySlotHandler.handle(
+				menu,
+				player,
+				payload(Action.PICKUP, 0, BundleSlotActionPayload.containerButton(BundleSlotActionPayload.EVENT_BUTTON_LEFT))
+		));
+		assertEquals(10, carriedStack.getCount());
+		assertTrue(BundleInventoryAccess.read(bundleStack()).get(0).isEmpty());
+	}
+
+	@Test
+	void rightClick_placesOneItem() {
+		carriedStack = new ItemStack(Items.GOLD_INGOT, 16);
+
+		assertTrue(BundleOverlaySlotHandler.handle(
+				menu,
+				player,
+				payload(Action.PLACE, 2, BundleSlotActionPayload.containerButton(BundleSlotActionPayload.EVENT_BUTTON_RIGHT))
+		));
+		assertEquals(15, carriedStack.getCount());
+		assertEquals(1, BundleInventoryAccess.read(bundleStack()).get(2).getCount());
+	}
+
+	@Test
+	void rightClick_picksUpHalfStack() {
+		BundleInventoryAccess.write(
+			bundleStack(),
+			BundleInventoryAccess.read(bundleStack()).set(0, new ItemStack(Items.IRON_INGOT, 10))
+		);
+
+		assertTrue(BundleOverlaySlotHandler.handle(
+				menu,
+				player,
+				payload(Action.PICKUP, 0, BundleSlotActionPayload.containerButton(BundleSlotActionPayload.EVENT_BUTTON_RIGHT))
+		));
+		assertEquals(5, carriedStack.getCount());
+		assertEquals(5, BundleInventoryAccess.read(bundleStack()).get(0).getCount());
+	}
+
+	@Test
 	void place_movesCarriedIntoEmptyInnerSlot() {
 		carriedStack = new ItemStack(Items.GOLD_INGOT, 5);
 

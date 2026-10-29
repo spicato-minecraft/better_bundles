@@ -24,6 +24,29 @@ public record BundleSlotActionPayload(
 	public static final int MOUSE_BUTTON_PRIMARY = 0;
 	public static final int MOUSE_BUTTON_SECONDARY = 1;
 
+	/**
+	 * Mouse-event button for a left click. Container slots still use {@link #MOUSE_BUTTON_PRIMARY}.
+	 * Matches {@code AbstractContainerScreen.getContainerClickButton}.
+	 */
+	public static final int EVENT_BUTTON_LEFT = 1;
+
+	/**
+	 * Mouse-event button for a right click. Container slots still use {@link #MOUSE_BUTTON_SECONDARY}.
+	 */
+	public static final int EVENT_BUTTON_RIGHT = 3;
+
+	/**
+	 * Converts a screen mouse-event button into the container click button used by overlay slot actions.
+	 * Left click places or picks up the whole stack; right click places one item or picks up half.
+	 */
+	public static int containerButton(int eventButton) {
+		return switch (eventButton) {
+			case EVENT_BUTTON_LEFT -> MOUSE_BUTTON_PRIMARY;
+			case EVENT_BUTTON_RIGHT -> MOUSE_BUTTON_SECONDARY;
+			default -> eventButton;
+		};
+	}
+
 	public static final Identifier ID = Identifier.fromNamespaceAndPath(BetterBundles.MOD_ID, "bundle_slot_action");
 	public static final CustomPacketPayload.Type<BundleSlotActionPayload> TYPE = new CustomPacketPayload.Type<>(ID);
 

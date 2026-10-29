@@ -137,15 +137,15 @@ public final class BundleHoverController {
 						overlay,
 						innerSlot.getAsInt(),
 						BundleSlotActionPayload.Action.SHIFT_MOVE,
-						event.button()
+						containerButton(event)
 				);
 			}
 
 			if (doubled) {
-				return sendResolvedAction(screen, overlay, innerSlot.getAsInt(), event.button(), true);
+				return sendResolvedAction(screen, overlay, innerSlot.getAsInt(), containerButton(event), true);
 			}
 
-			return sendResolvedAction(screen, overlay, innerSlot.getAsInt(), event.button(), false);
+			return sendResolvedAction(screen, overlay, innerSlot.getAsInt(), containerButton(event), false);
 		}
 
 		if (!screen.getMenu().getCarried().isEmpty()) {
@@ -508,6 +508,10 @@ public final class BundleHoverController {
 
 	private static double[] resolveMouse(AbstractContainerScreen<?> screen, MouseButtonEvent event) {
 		return new double[] { event.x(), event.y() };
+	}
+
+	private static int containerButton(MouseButtonEvent event) {
+		return BundleSlotActionPayload.containerButton(event.button());
 	}
 
 	public static double[] currentMousePosition() {
